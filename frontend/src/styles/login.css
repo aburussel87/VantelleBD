@@ -1,0 +1,208 @@
+/*
+ * --- ELEGANT DARK THEME WITH LIGHT GLASSMORPHISM ---
+ */
+
+/* 1. IMPORT FONT */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* --- GENERAL PAGE LAYOUT --- */
+.login-page {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Deep, elegant radial background */
+  background: radial-gradient(circle at top left, #28436b, #0a0a0a);
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+}
+
+.login-container {
+  width: 90%;
+  max-width: 1100px;
+  height: 650px;
+  display: flex;
+  border-radius: 25px;
+  overflow: hidden;
+  /* Enhanced shadow for a lifted, premium look */
+  box-shadow: 0 10px 60px rgba(104, 90, 90, 0.5); 
+}
+
+/* --- GLASSMORPHIC STYLE (The core definition) --- */
+.glass {
+  background: rgba(255, 255, 255, 0.05); /* Very light background for dark theme */
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.15); /* More subtle border */
+}
+
+/* --- LEFT SECTION (FORM - Dark background, tighter spacing) --- */
+.login-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom right, #7c6a6a, #966161); 
+  padding: 0; /* Remove extra padding */
+}
+
+/* --- FORM BOX (Applied with Glassmorphism) --- */
+.login-box {
+  width: 100%;
+  height : 100%;
+  padding: 2.5rem 2rem 2.5rem 2rem; /* Less top padding for minimal space after logo */
+  border-radius: 20px;
+  text-align: center;
+  background: rgba(55, 8, 84, 0.05); 
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(113, 50, 50, 0.1);
+  box-shadow: 30 30 30px rgba(89, 72, 72, 0.2);
+}
+
+/* Reduce space below logo */
+.login-logo {
+  width: 150px;
+}
+
+.login-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.login-subtitle {
+  font-size: 0.95rem;
+  color: #b0b0b0;
+}
+
+.input-group {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #e0e0e0;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  outline: none;
+  font-size: 0.95rem;
+  transition: 0.3s ease;
+}
+
+.input-group input:focus {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 2px #6a11cb;
+}
+
+.input-group input::placeholder {
+  color: #bbb;
+}
+
+.login-button {
+  width: 100%;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #6a11cb, #2575fc);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+  opacity: 0.95;
+  box-shadow: 0 8px 25px rgba(106, 17, 203, 0.5); 
+}
+
+.login-error {
+  background: rgba(255, 50, 50, 0.2);
+  color: #ff8080;
+  padding: 0.7rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+/* --- RIGHT SECTION (IMAGE + Glassmorphism) --- */
+.login-right {
+  flex: 1;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  background: rgba(255, 255, 255, 0.1); 
+  border-left: 1px solid rgba(255, 255, 255, 0.3); 
+}
+
+.overlay {
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem;
+  background: rgba(0, 0, 0, 0.15); 
+}
+
+.overlay-heading {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.overlay-text {
+  font-size: 1.1rem;
+  color: #ddd;
+  margin-bottom: 1.5rem;
+}
+
+.overlay-quote {
+  font-style: italic;
+  color: #ccc;
+  font-size: 0.95rem;
+  border-left: 5px solid #6a11cb; 
+  padding-left: 1.5rem;
+}
+
+/* --- RESPONSIVE: STACK LEFT/RIGHT ON MOBILE --- */
+@media (max-width: 992px) {
+  .login-container {
+    flex-direction: column;
+    height: auto;
+    max-height: 100vh;
+    overflow-y: auto; /* Scrollable if content exceeds viewport */
+  }
+
+  .login-left,
+  .login-right {
+    width: 100%;
+    flex: none;
+  }
+
+  .login-left {
+    padding: 1rem 0;
+  }
+
+  .login-right {
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .overlay {
+    padding: 2rem;
+  }
+}

@@ -1,0 +1,14 @@
+# Root environment file
+.env
+
+# Backend
+/backend/.env
+/backend/node_modules/
+
+# Frontend
+/frontend/.env
+/frontend/node_modules/
+
+# Optional: OS or editor files
+.DS_Store
+*.log
