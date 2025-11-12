@@ -1,31 +1,53 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/login_log.png"; // Local logo
 import bgImage from "../assets/sample.jpeg"; // Local background image
 import "../styles/login.css";
+import API_BASE_URL from "./config";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "Login-Vantelle BD";
+    document.title = "Login - Vantelle BD";
     const favicon = document.getElementById("favicon");
-    if (favicon) {
-      favicon.href = "/login.png"; // Path to your page-specific favicon
-    }
+    if (favicon) favicon.href = "/login.png";
   }, []);
 
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email === "admin@gmail.com" && password === "123") {
-      localStorage.setItem("token", "fake-jwt-token");
-      navigate("/home");
-    } else {
-      setError("Invalid email or password");
+    setError("");
+    if (!identifier || !password) return setError("All fields are required");
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Login failed");
+        setLoading(false);
+        return;
+      }
+
+      // Save token and user info to localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      navigate("/home"); // redirect after login
+    } catch (err) {
+      console.error(err);
+      setError("Server error. Try again later.");
+      setLoading(false);
     }
   };
 
@@ -43,13 +65,13 @@ export default function Login() {
 
             <form onSubmit={handleSubmit} className="login-form">
               <div className="input-group">
-                <label>Email</label>
+                <label>Email or Mobile</label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   required
-                  placeholder="Enter your email"
+                  placeholder="Enter email or mobile number"
                 />
               </div>
               <div className="input-group">
@@ -62,10 +84,15 @@ export default function Login() {
                   placeholder="Enter your password"
                 />
               </div>
-              <button type="submit" className="login-button">
-                Login
+              <button type="submit" className="login-button" disabled={loading}>
+                {loading ? "Logging in..." : "Login"}
               </button>
             </form>
+
+            <p className="register-text">
+              Don't have an account? <Link to="/register" style={{ color: "blue", textDecoration: "underline" }}>Register here</Link>
+            </p>
+
           </div>
         </div>
 

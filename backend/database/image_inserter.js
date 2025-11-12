@@ -1,13 +1,11 @@
+
 const path = require('path');
 const fs = require('fs');
-const pool = require('./db');
+const pool = require('./db'); // your PostgreSQL pool connection
 
 async function insertProductImage(productId, imageFileName, isMain = false) {
   try {
-    // Build absolute path to image
     const imagePath = path.join(__dirname, '../images', imageFileName);
-
-    // Read image as Buffer
     const imageBuffer = fs.readFileSync(imagePath);
 
     const query = `
@@ -16,14 +14,32 @@ async function insertProductImage(productId, imageFileName, isMain = false) {
       RETURNING id;
     `;
     const values = [productId, imageBuffer, isMain];
-
     const result = await pool.query(query, values);
-    console.log('Inserted image ID:', result.rows[0].id);
 
+    console.log(`✅ Image inserted for product ${productId} (image_id: ${result.rows[0].id})`);
   } catch (error) {
-    console.error('Error inserting product image:', error);
+    console.error(`❌ Error inserting image for product ${productId}:`, error.message);
   }
 }
 
-// Example usage
-insertProductImage(2, 'product.jpg', false);
+async function insertImagesForAllProducts() {
+  try {
+    // Get all existing product IDs
+    const res = await pool.query(`SELECT id FROM vantelle.products`);
+    const productIds = res.rows.map(row => row.id);
+
+    console.log(`Found ${productIds.length} products. Inserting images...`);
+
+    for (const id of productIds) {
+      await insertProductImage(id, 'sample.jpg', false); // false = not main image
+    }
+
+    console.log('🎉 All product images inserted successfully!');
+  } catch (error) {
+    console.error('❌ Error during bulk insert:', error.message);
+  } finally {
+    pool.end();
+  }
+}
+
+insertImagesForAllProducts();

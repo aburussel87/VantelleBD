@@ -8,6 +8,8 @@ const jwt = require('jsonwebtoken');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.json()); // ✅ important
+app.use(express.urlencoded({ extended: true }));
 
 
 
@@ -15,13 +17,20 @@ app.use(bodyParser.json());
 const homeRoutes = require('./routes/home');
 const productDetailsRoutes = require('./routes/product_details');
 const imageRoutes = require('./routes/image');
+const shopRoutes = require('./routes/shop');
+const loginRoutes = require('./routes/login');
+const registerRoutes = require('./routes/register');
+const updateRoutes = require('./routes/update');
+
 
 // Use Routes
 app.use('/api/home', homeRoutes);
 app.use('/api/details', productDetailsRoutes);
 app.use('/api/images', imageRoutes);
-
-
+app.use('/api/shop', shopRoutes);
+app.use('/api/auth', loginRoutes);
+app.use('/api/register', registerRoutes);
+app.use('/api/update', updateRoutes);
 
 
 

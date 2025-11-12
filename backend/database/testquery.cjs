@@ -1,13 +1,24 @@
-//const client = require('../backend/config/db'); 
+const client = require('./db'); // your pg Pool client
 
+async function getAllProducts(id) {
+  const query = `
+    SELECT * from vantelle.get_user_with_addresses($1);
+  `;
 
-const client = require('./db');
-const { resourceUsage } = require('process');
-const { getAllProductImages} = require('./query');
+  try {
+    const result = await client.query(query,[id]);
+    return result.rows[0].get_user_with_addresses.addresses[0] || []; 
+  } catch (err) {
+    console.error('❌ Error fetching all products:', err.message);
+    throw err;
+  }
+}
+
+// Test the function
 (async () => {
   try {
-    const result = await getAllProductImages(2);
-    console.log(result);
+    const products = await getAllProducts(8);
+    console.log(products);
   } catch (err) {
     console.error('❌ Error:', err);
   } finally {

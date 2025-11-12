@@ -1,0 +1,2 @@
+1. register.js(route) has query
+2. login.js(route) has query

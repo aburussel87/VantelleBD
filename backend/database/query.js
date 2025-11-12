@@ -51,8 +51,71 @@ async function get_product_by_id(product_id){
     return result.rows[0];
 }
 
+
+
+async function getAllProducts() {
+  const query = `
+    SELECT
+      p.id,
+      p.title,
+      p.description,
+      p.price,
+      p.discount,
+      p.inventory,
+      p.category,
+      p.color,
+      p.size_options,
+      p.created_at,
+      p.updated_at,
+      p.is_featured,
+      p.gender,
+      p.season,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'id', pi.id,
+            'image', encode(pi.image_data, 'base64'),
+            'is_main', pi.is_main,
+            'created_at', pi.created_at
+          )
+        ) FILTER (WHERE pi.id IS NOT NULL),
+        '[]'
+      ) AS images
+    FROM vantelle.products p
+    LEFT JOIN vantelle.product_images pi
+      ON pi.product_id = p.id
+    GROUP BY p.id
+    ORDER BY p.created_at DESC, p.id ASC;
+  `;
+
+  try {
+    const result = await client.query(query);
+    return result.rows; 
+  } catch (err) {
+    console.error('❌ Error fetching all products:', err.message);
+    throw err;
+  }
+}
+
+
+async function get_user_with_addresses(id) {
+  const query = `
+    SELECT * from vantelle.get_user_with_addresses($1);
+  `;
+
+  try {
+    const result = await client.query(query,[id]);
+    return result.rows[0].get_user_with_addresses || []; 
+  } catch (err) {
+    console.error('❌ Error fetching all products:', err.message);
+    throw err;
+  }
+}
+
 module.exports = {
     get_featured_products,
     get_product_by_id,
-    getAllProductImages
+    getAllProductImages,
+    getAllProducts,
+    get_user_with_addresses
 };
