@@ -46,7 +46,7 @@ export default function ProfilePage() {
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
 
-    const address = parsedUser.addresses || {};
+    const address = parsedUser.addresses && parsedUser.addresses.length > 0 ? parsedUser.addresses[0] : {};
     setFormData({
       full_name: parsedUser.full_name || "",
       email: parsedUser.email || "",
@@ -60,12 +60,10 @@ export default function ProfilePage() {
       postal_code: address.postal_code || "",
       profile_image: null,
     });
-
     if (parsedUser.profile_image) {
       setPreview(convertProfileImage(parsedUser.profile_image));
     }
   }, [navigate]);
-
   // Load divisions
   useEffect(() => {
     fetch(`${API_BASE_URL}/bd-locations/divisions`)
@@ -73,6 +71,7 @@ export default function ProfilePage() {
       .then((data) => setDivisions(data.data || []))
       .catch((err) => console.error("Division load error:", err));
   }, []);
+  console.log(formData);
 
   // Load districts based on division
   useEffect(() => {

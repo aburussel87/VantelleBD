@@ -17,6 +17,11 @@ function generateTrackingNumber(orderId) {
   return `TRK-${orderId.slice(-4)}-${timestamp}-${rand}`; // e.g., TRK-4829-543210-3847
 }
 
+function generateOrderItemId(orderId, productId) {
+  const rand = Math.floor(100 + Math.random() * 900); // 3 random digits
+  return `${orderId.slice(-4)}-${productId}-${rand}`; // e.g., 4829-5678-384
+}
+
 router.post("/place", authenticate, async (req, res) => {
     const { 
         full_name, email, phone, division, district, upazila, 
@@ -80,8 +85,8 @@ router.post("/place", authenticate, async (req, res) => {
         const trackingNumber = generateTrackingNumber(orderId);
         const orderRes = await db.query(`
             INSERT INTO orders 
-            (order_id, user_id, total_amount, payment_method, shipping_address, shipping_fee, estimated_delivery,notes, tracking_number,created_at,updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+            (order_id, user_id, total_amount, payment_method, shipping_address, shipping_fee, estimated_delivery,notes, tracking_number,created_at,updated_at,status,payment_status,order_date)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), 'Pending', 'Pending', NOW())
             RETURNING order_id
         `, [
             orderId, user_id, total_amount, payment_method, structured_address,
@@ -89,7 +94,6 @@ router.post("/place", authenticate, async (req, res) => {
         ]);
 
         
-
         // Insert order items
         for (let item of cartRes.rows) {
             const discountAmount =
@@ -99,15 +103,15 @@ router.post("/place", authenticate, async (req, res) => {
 
             const finalUnit = item.unit_price - discountAmount;
             const totalPrice = finalUnit * item.quantity;
-
+            const orderItemId = generateOrderItemId(orderId, item.product_id);
             await db.query(`
                 INSERT INTO order_items (
-                    order_id, product_id, quantity, unit_price,
+                    id, order_id, product_id, quantity, unit_price,
                     discount, discount_type, size, color, total_price
                 )
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
             `, [
-                orderId, item.product_id, item.quantity, item.unit_price,
+                orderItemId, orderId, item.product_id, item.quantity, item.unit_price,
                 item.discount, item.discount_type, item.size, item.color, totalPrice
             ]);
 
@@ -146,7 +150,7 @@ router.post("/place", authenticate, async (req, res) => {
 
 
 router.get("/details/:order_id", authenticate, async (req, res) => {
-  const { order_id } = String(req.params);
+  const order_id = String(req.params.order_id);
   console.log("Fetching order details for order_id:", order_id);
 
   try {
@@ -345,7 +349,7 @@ router.get("/allOrders", authenticate, async (req, res) => {
 
 
 router.patch("/cancel/:order_id", authenticate, async (req, res) => {
-  const { order_id } = String(req.params);
+  const order_id = String(req.params.order_id);
   const user_id = String(req.user.user_id);
 
   try {

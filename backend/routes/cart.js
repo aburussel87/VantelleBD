@@ -33,56 +33,78 @@ router.patch('/update', authenticate, async (req, res) => {
   try {
     const { cart_id, quantity } = req.body;
     const cart_id_str = String(cart_id);
+
     if (quantity < 1) {
       return res.status(400).json({ success: false, message: "Invalid quantity" });
     }
+
+    // Get product_id of cart row
     const productID = await db.query(
-      `
-      SELECT product_id
-      FROM cart
-      WHERE id = $1 AND user_id = $2
-      `,
+      `SELECT product_id FROM cart WHERE cart_id = $1 AND user_id = $2`,
       [cart_id_str, req.user.user_id]
     );
+
     if (productID.rows.length === 0) {
       return res.status(404).json({ success: false, message: "Cart item not found" });
     }
+
     const product_id = productID.rows[0].product_id;
 
-    const inventory = await db.query(
-      'SELECT inventory FROM products WHERE id = $1',
+    // Get inventory
+    const inventoryRes = await db.query(
+      `SELECT inventory FROM products WHERE id = $1`,
       [product_id]
     );
-    if (inventory.rows.length === 0) {
+
+    if (inventoryRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: "Inventory not found" });
     }
-    const inventoryData = inventory.rows[0];
-    if (quantity > inventoryData.inventory) {
-      return res.status(400).json({ success: false, message: "Requested quantity exceeds available stock" });
-    } 
-    await db.query(`
-      UPDATE cart
-      SET quantity = $1
-      WHERE id = $2 AND user_id = $3
-    `, [quantity, cart_id, req.user.user_id]);
-      console.log("Qty updated:", req.user.user_id, quantity,"\n");
-    res.json({ success: true });
+
+    const inventory = inventoryRes.rows[0].inventory;
+
+    // Get total quantity in cart excluding this row
+    const totalOtherQtyRes = await db.query(
+      `
+      SELECT COALESCE(SUM(quantity), 0) AS total_quantity
+      FROM cart
+      WHERE user_id = $1 AND product_id = $2 AND cart_id != $3
+      `,
+      [String(req.user.user_id), product_id, cart_id_str]
+    );
+    const totalOtherQuantity = parseInt(totalOtherQtyRes.rows[0].total_quantity, 10);
+
+    if (quantity + totalOtherQuantity > inventory) {
+      return res.status(400).json({
+        success: false,
+        message: "Requested quantity exceeds available stock"
+      });
+    }
+
+    // Update cart
+    await db.query(
+      `UPDATE cart SET quantity = $1 WHERE cart_id = $2 AND user_id = $3`,
+      [quantity, cart_id_str, String(req.user.user_id)]
+    );
+
+    res.json({ success: true, message: "Quantity updated successfully" });
+    console.log("Qty updated:", req.user.user_id, quantity);
 
   } catch (error) {
     console.error("Qty update error:", error);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 });
+
 
 router.delete('/:cart_id', authenticate, async (req, res) => {
   try {
     await db.query(`
       DELETE FROM cart
-      WHERE id = $1 AND user_id = $2
+      WHERE cart_id = $1 AND user_id = $2
     `, [String(req.params.cart_id), req.user.user_id]);
 
     res.json({ success: true });
-      console.log("Item deleted from cart:", req.user.user_id, req.params.cart_id);
+    console.log("Item deleted from cart:", req.user.user_id, req.params.cart_id);
   } catch (error) {
     console.error("Delete error:", error);
     res.status(500).json({ success: false });

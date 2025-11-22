@@ -4,6 +4,7 @@ const multer = require("multer");
 const pool = require("../database/db.js");
 const jwt = require("jsonwebtoken");
 const verifyToken = require("../middleware/authenticate.js");
+const { get_user_with_addresses } = require("../database/query.js");
 
 const router = express.Router();
 
@@ -91,28 +92,22 @@ router.put("/", verifyToken, upload.single("profile_image"), async (req, res) =>
     await client.query("COMMIT");
 
     // 5️⃣ Fetch updated user with address
-    const updatedUserRes = await client.query(
-      `SELECT u.user_id, u.full_name, u.email, u.phone, u.gender, u.profile_image,
-              jsonb_build_object(
-                'division', a.division,
-                'city', a.city,
-                'state', a.state,
-                'address_line1', a.address_line1,
-                'address_line2', a.address_line2,
-                'postal_code', a.postal_code
-              ) AS addresses
-       FROM users u
-       LEFT JOIN addresses a ON u.user_id = a.user_id
-       WHERE u.user_id = $1`,
-      [user_id]
-    );
+    const userInfo = await get_user_with_addresses(String(user.user_id));
 
     res.status(200).json({
       message:
         old_password && new_password
           ? "Password updated successfully! Redirecting..."
           : "Profile updated successfully!",
-      updatedUser: updatedUserRes.rows[0],
+      updatedUser: {
+        user_id: String(user.user_id),
+        full_name,
+        email,
+        phone,
+        gender,
+        profile_image: profileImageBuffer,
+        addresses: userInfo.addresses || []
+      }
     });
   } catch (err) {
     await client.query("ROLLBACK");

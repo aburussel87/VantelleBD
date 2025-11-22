@@ -6,10 +6,17 @@ const cors = require('cors');
 
 const jwt = require('jsonwebtoken');
 const app = express();
-app.use(cors({
-  origin: ["https://vantelle-bd.vercel.app", "http://localhost:3000"], // add local dev if needed
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-}));
+const corsOptions = {
+  origin: [
+    "http://localhost:3000",
+    "https://vantelle-bd.vercel.app",
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // include PATCH
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+
 
 app.use(bodyParser.json());
 app.use(express.json()); // ✅ important

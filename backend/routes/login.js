@@ -69,12 +69,12 @@ router.post("/login", async (req, res) => {
         full_name: user.full_name,
         email: user.email,
         phone: user.phone,
+        gender: user.gender,
         role: user.role,
         profile_image: user.profile_image,
         addresses: userInfo.addresses || []
       },
     });
-
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ message: "Server error." });
