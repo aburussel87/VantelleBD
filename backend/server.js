@@ -7,7 +7,8 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const app = express();
 app.use(cors({
-  origin: "https://vantellebd.onrender.com"
+  origin: ["https://vantelle-bd.vercel.app", "http://localhost:3000"], // add local dev if needed
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 }));
 
 app.use(bodyParser.json());
