@@ -5,7 +5,7 @@ const { getAllProductImages } = require('../database/query');
 // GET /api/featured-products
 router.get('/:id', async (req, res) => {
   try {
-    const images = await getAllProductImages(req.params.id);
+    const images = await getAllProductImages(String(req.params.id));
     res.json({
       success: true,
       data: images 

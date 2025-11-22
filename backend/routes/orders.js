@@ -23,7 +23,7 @@ router.post("/place", authenticate, async (req, res) => {
         address_line1, address_line2, payment_method, shipping_fee,notes
     } = req.body;
 
-    const user_id = req.user.user_id;
+    const user_id = String(req.user.user_id);
 
     const structured_address = JSON.stringify({
         full_name,
@@ -146,7 +146,7 @@ router.post("/place", authenticate, async (req, res) => {
 
 
 router.get("/details/:order_id", authenticate, async (req, res) => {
-  const { order_id } = req.params;
+  const { order_id } = String(req.params);
   console.log("Fetching order details for order_id:", order_id);
 
   try {
@@ -256,7 +256,7 @@ router.get("/details/:order_id", authenticate, async (req, res) => {
 
 // GET /allOrders - fetch all orders of the authenticated user
 router.get("/allOrders", authenticate, async (req, res) => {
-  const user_id = req.user.user_id;
+  const user_id = String(req.user.user_id);
 
   try {
     // Fetch all orders for this user
@@ -345,8 +345,8 @@ router.get("/allOrders", authenticate, async (req, res) => {
 
 
 router.patch("/cancel/:order_id", authenticate, async (req, res) => {
-  const { order_id } = req.params;
-  const user_id = req.user.user_id;
+  const { order_id } = String(req.params);
+  const user_id = String(req.user.user_id);
 
   try {
     const result = await db.query(

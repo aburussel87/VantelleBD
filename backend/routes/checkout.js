@@ -6,7 +6,7 @@ const db = require('../database/db');
 // GET /api/checkout
 router.get('/', authenticate, async (req, res) => {
   try {
-    const user_id = req.user.user_id;
+    const user_id = String(req.user.user_id);
     console.log("Checkout load for user:", user_id);
     // Get user basic info
     const userRes = await db.query(`

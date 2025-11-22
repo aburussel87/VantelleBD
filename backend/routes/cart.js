@@ -32,7 +32,7 @@ router.get('/', authenticate, async (req, res) => {
 router.patch('/update', authenticate, async (req, res) => {
   try {
     const { cart_id, quantity } = req.body;
-
+    const cart_id_str = String(cart_id);
     if (quantity < 1) {
       return res.status(400).json({ success: false, message: "Invalid quantity" });
     }
@@ -42,7 +42,7 @@ router.patch('/update', authenticate, async (req, res) => {
       FROM cart
       WHERE id = $1 AND user_id = $2
       `,
-      [cart_id, req.user.user_id]
+      [cart_id_str, req.user.user_id]
     );
     if (productID.rows.length === 0) {
       return res.status(404).json({ success: false, message: "Cart item not found" });
@@ -79,7 +79,7 @@ router.delete('/:cart_id', authenticate, async (req, res) => {
     await db.query(`
       DELETE FROM cart
       WHERE id = $1 AND user_id = $2
-    `, [req.params.cart_id, req.user.user_id]);
+    `, [String(req.params.cart_id), req.user.user_id]);
 
     res.json({ success: true });
       console.log("Item deleted from cart:", req.user.user_id, req.params.cart_id);
@@ -91,7 +91,7 @@ router.delete('/:cart_id', authenticate, async (req, res) => {
 
 router.post('/add', authenticate, async (req, res) => {
   const { product_id, quantity = 1, size, color } = req.body;
-
+  const product_id_str = String(product_id);
   if (!product_id) {
     return res.status(400).json({ success: false, message: "Product ID is required" });
   }
@@ -100,7 +100,7 @@ router.post('/add', authenticate, async (req, res) => {
     // Get product details from products table, including discount info
     const productResult = await db.query(
       'SELECT price, inventory, status, discount, discount_type FROM products WHERE id = $1',
-      [product_id]
+      [product_id_str]
     );
 
     if (productResult.rows.length === 0) {
@@ -121,7 +121,7 @@ router.post('/add', authenticate, async (req, res) => {
       FROM cart
       WHERE user_id = $1 AND product_id = $2
       `,
-      [req.user.user_id, product_id]
+      [String(req.user.user_id), product_id_str]
     );
     const currentCartQuantity = parseInt(currentCartResult.rows[0].total_quantity, 10);
     if (product.inventory <= 0 || (quantity + currentCartQuantity) > product.inventory) {

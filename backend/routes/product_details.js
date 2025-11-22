@@ -7,7 +7,7 @@ const { get_product_by_id, getAllProductImages } = require('../database/query');
 // GET /api/details/:id
 router.get('/:id', async (req, res) => {
   try {
-    const productId = req.params.id;
+    const productId = String(req.params.id);
 
  
     const product = await get_product_by_id(productId);

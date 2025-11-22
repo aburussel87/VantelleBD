@@ -13,7 +13,7 @@ const upload = multer({ storage });
 
 // --- UPDATE PROFILE ---
 router.put("/", verifyToken, upload.single("profile_image"), async (req, res) => {
-  const user_id = req.user.user_id;
+  const user_id = String(req.user.user_id);
   const {
     full_name,
     email,
