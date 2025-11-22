@@ -84,7 +84,10 @@ async function getAllProducts() {
     FROM products p
     LEFT JOIN product_images pi
       ON pi.product_id = p.id
-    GROUP BY p.id
+    GROUP BY 
+      p.id, p.title, p.description, p.price, p.discount, p.inventory, 
+      p.category, p.color, p.size_options, p.created_at, p.updated_at,
+      p.is_featured, p.gender, p.season
     ORDER BY p.created_at DESC, p.id ASC;
   `;
 
@@ -96,6 +99,7 @@ async function getAllProducts() {
     throw err;
   }
 }
+
 
 
 async function get_user_with_addresses(id) {
