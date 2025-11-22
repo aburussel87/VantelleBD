@@ -6,7 +6,10 @@ const cors = require('cors');
 
 const jwt = require('jsonwebtoken');
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "https://vantellebd.onrender.com"
+}));
+
 app.use(bodyParser.json());
 app.use(express.json()); // ✅ important
 app.use(express.urlencoded({ extended: true }));
