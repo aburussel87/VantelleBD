@@ -80,8 +80,8 @@ router.post("/place", authenticate, async (req, res) => {
         const trackingNumber = generateTrackingNumber(orderId);
         const orderRes = await db.query(`
             INSERT INTO orders 
-            (order_id, user_id, total_amount, payment_method, shipping_address, shipping_fee, estimated_delivery,notes, tracking_number)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            (order_id, user_id, total_amount, payment_method, shipping_address, shipping_fee, estimated_delivery,notes, tracking_number,created_at,updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
             RETURNING order_id
         `, [
             orderId, user_id, total_amount, payment_method, structured_address,

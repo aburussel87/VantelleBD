@@ -42,8 +42,8 @@ router.post("/", upload.single("profile_image"), async (req, res) => {
     const address_id = generateAddressId(user_id);
 
     const userResult = await pool.query(
-      `INSERT INTO users (user_id, full_name, username, email, phone, password_hash, gender, profile_image)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO users (user_id, full_name, username, email, phone, password_hash, gender, profile_image,status,role,created_at,updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
        RETURNING user_id`,
       [
         user_id,
@@ -53,13 +53,15 @@ router.post("/", upload.single("profile_image"), async (req, res) => {
         phone,
         hashedPassword,
         gender,
-        req.file ? req.file.buffer : null
+        req.file ? req.file.buffer : null,
+        "active",
+        "customer",
       ]
     );
 
     await pool.query(
-      `INSERT INTO addresses (address_id, user_id, address_line1, address_line2, division, city, state, postal_code, country, is_default)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Bangladesh', true)`,
+      `INSERT INTO addresses (address_id, user_id, address_line1, address_line2, division, city, state, postal_code, country, is_default,created_at,updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Bangladesh', true, NOW(), NOW())`,
       [address_id, user_id, address_line1, address_line2, division, district, upazila, postal_code]
     );
 

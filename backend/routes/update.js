@@ -51,7 +51,7 @@ router.put("/", verifyToken, upload.single("profile_image"), async (req, res) =>
       }
 
       const hashedPassword = await bcrypt.hash(new_password, 10);
-      await client.query("UPDATE users SET password_hash = $1 WHERE user_id = $2", [
+      await client.query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE user_id = $2", [
         hashedPassword,
         user_id,
       ]);
@@ -62,7 +62,7 @@ router.put("/", verifyToken, upload.single("profile_image"), async (req, res) =>
 
     await client.query(
       `UPDATE users 
-       SET full_name = $1, email = $2, phone = $3, gender = $4, profile_image = $5
+       SET full_name = $1, email = $2, phone = $3, gender = $4, profile_image = $5,updated_at = NOW()
        WHERE user_id = $6`,
       [full_name, email, phone, gender, profileImageBuffer, user_id]
     );
@@ -76,14 +76,14 @@ router.put("/", verifyToken, upload.single("profile_image"), async (req, res) =>
     if (existingAddress.rows.length > 0) {
       await client.query(
         `UPDATE addresses
-         SET division = $1, city = $2, state = $3, address_line1 = $4, address_line2 = $5, postal_code = $6
+         SET division = $1, city = $2, state = $3, address_line1 = $4, address_line2 = $5, postal_code = $6,updated_at = NOW()
          WHERE user_id = $7`,
         [division, district, upazila, address_line1, address_line2, postal_code, user_id]
       );
     } else {
       await client.query(
-        `INSERT INTO addresses (user_id, division, city, state, address_line1, address_line2, postal_code)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        `INSERT INTO addresses (user_id, division, city, state, address_line1, address_line2, postal_code, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7, NOW(), NOW())`,
         [user_id, division, district, upazila, address_line1, address_line2, postal_code]
       );
     }

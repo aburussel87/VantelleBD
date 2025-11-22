@@ -138,8 +138,8 @@ router.post('/add', authenticate, async (req, res) => {
     // Insert or update quantity if same variant exists
     await db.query(
       `
-      INSERT INTO cart (user_id, product_id, quantity, unit_price, size, color, discount, discount_type,cart_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO cart (user_id, product_id, quantity, unit_price, size, color, discount, discount_type,cart_id,added_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
       ON CONFLICT (user_id, product_id, size, color)
       DO UPDATE 
         SET quantity = cart.quantity + EXCLUDED.quantity,
