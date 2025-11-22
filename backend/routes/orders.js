@@ -4,6 +4,19 @@ const authenticate = require("../middleware/authenticate");
 const db = require("../database/db");
 const path = require("path");
 
+
+function generateOrderId(userId) {
+  const datePart = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 12); // YYYYMMDDHHMM
+  const rand = Math.floor(1000 + Math.random() * 9000); // 4 random digits
+  return `ORD-${userId}-${datePart}-${rand}`; // e.g., ORD-12345678-202511221045-4829
+}
+
+function generateTrackingNumber(orderId) {
+  const rand = Math.floor(1000 + Math.random() * 9000); // 4 random digits
+  const timestamp = Date.now().toString().slice(-6);     // last 6 digits of timestamp
+  return `TRK-${orderId.slice(-4)}-${timestamp}-${rand}`; // e.g., TRK-4829-543210-3847
+}
+
 router.post("/place", authenticate, async (req, res) => {
     const { 
         full_name, email, phone, division, district, upazila, 
@@ -63,28 +76,19 @@ router.post("/place", authenticate, async (req, res) => {
         });
 
         // Insert order
+        const orderId = generateOrderId(user_id);
+        const trackingNumber = generateTrackingNumber(orderId);
         const orderRes = await db.query(`
             INSERT INTO orders 
-            (user_id, total_amount, payment_method, shipping_address, shipping_fee, estimated_delivery,notes)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            (order_id, user_id, total_amount, payment_method, shipping_address, shipping_fee, estimated_delivery,notes, tracking_number)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING order_id
         `, [
-            user_id, total_amount, payment_method, structured_address,
-            shipping_fee, formatted_delivery, notes
+            orderId, user_id, total_amount, payment_method, structured_address,
+            shipping_fee, formatted_delivery, notes, trackingNumber
         ]);
 
-        const order_id = orderRes.rows[0].order_id;
-
-        // Generate Tracking Number
-        const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const tracking_number = `TRK-${order_id}-${user_id}-${randomCode}`;
-
-        // Update order with tracking number
-        await db.query(`
-            UPDATE orders
-            SET tracking_number = $1
-            WHERE order_id = $2
-        `, [tracking_number, order_id]);
+        
 
         // Insert order items
         for (let item of cartRes.rows) {
@@ -103,7 +107,7 @@ router.post("/place", authenticate, async (req, res) => {
                 )
                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
             `, [
-                order_id, item.product_id, item.quantity, item.unit_price,
+                orderId, item.product_id, item.quantity, item.unit_price,
                 item.discount, item.discount_type, item.size, item.color, totalPrice
             ]);
 
@@ -121,15 +125,15 @@ router.post("/place", authenticate, async (req, res) => {
         res.json({
             success: true,
             message: "Order placed!",
-            order_id,
-            tracking_number,
+            order_id: orderId,
+            tracking_number: trackingNumber,
             estimated_delivery: formatted_delivery
         });
 
         console.log("Order placed:", {
             user_id,
-            order_id,
-            tracking_number,
+            order_id: orderId,
+            tracking_number: trackingNumber,
             estimated_delivery: formatted_delivery
         });
 

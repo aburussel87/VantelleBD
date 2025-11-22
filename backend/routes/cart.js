@@ -3,6 +3,14 @@ const router = express.Router();
 const { get_user_cart } = require('../database/query');
 const authenticate = require('../middleware/authenticate');
 const db = require('../database/db');
+
+
+function generateCartId(userId) {
+  const timestamp = Date.now().toString().slice(-6); // last 6 digits of timestamp
+  const rand = Math.floor(100 + Math.random() * 900); // 3 random digits
+  return `CART-${userId}-${timestamp}-${rand}`; // e.g., CART-12345678-543210-482
+}
+
 // GET /api/cart
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -105,6 +113,8 @@ router.post('/add', authenticate, async (req, res) => {
     if (product.status !== 'Active') {
       return res.status(400).json({ success: false, message: "Product is not available right now" });
     }
+
+
     const currentCartResult = await db.query(
       `
       SELECT COALESCE(SUM(quantity), 0) AS total_quantity
@@ -124,19 +134,19 @@ router.post('/add', authenticate, async (req, res) => {
     const unit_price = product.price;
     const discount = product.discount || 0;
     const discount_type = product.discount_type || 'None';
-
+    const cartId = generateCartId(req.user.user_id);
     // Insert or update quantity if same variant exists
     await db.query(
       `
-      INSERT INTO cart (user_id, product_id, quantity, unit_price, size, color, discount, discount_type)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO cart (user_id, product_id, quantity, unit_price, size, color, discount, discount_type,cart_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       ON CONFLICT (user_id, product_id, size, color)
       DO UPDATE 
         SET quantity = cart.quantity + EXCLUDED.quantity,
             discount = EXCLUDED.discount,
             discount_type = EXCLUDED.discount_type
       `,
-      [req.user.user_id, product_id, quantity, unit_price, size || null, color || null, discount, discount_type]
+      [req.user.user_id, product_id, quantity, unit_price, size || null, color || null, discount, discount_type, cartId]
     );
 
     res.json({ success: true, message: "Item added to cart successfully!" });
