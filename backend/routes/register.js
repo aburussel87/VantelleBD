@@ -14,6 +14,12 @@ function generateUserId(phone) {
   return Number(`${last4}${rand}`);            // 8-digit number
 }
 
+function generateAddressId(userId) {
+  const rand = Math.floor(1000 + Math.random() * 9000); // random 4 digits
+  return `${userId}-${rand}`; // e.g., 12345678-4829
+}
+
+
 router.post("/", upload.single("profile_image"), async (req, res) => {
   try {
     const {
@@ -33,26 +39,28 @@ router.post("/", upload.single("profile_image"), async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user_id = generateUserId(phone);
+    const address_id = generateAddressId(user_id);
+
     const userResult = await pool.query(
-      `INSERT INTO users (full_name, username, email, phone, password_hash, gender, profile_image,user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7,$8)
+      `INSERT INTO users (user_id, full_name, username, email, phone, password_hash, gender, profile_image)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING user_id`,
       [
+        user_id,
         full_name,
         username,
         email,
         phone,
         hashedPassword,
         gender,
-        req.file ? req.file.buffer : null,
-        user_id
+        req.file ? req.file.buffer : null
       ]
     );
 
     await pool.query(
-      `INSERT INTO addresses (user_id, address_line1, address_line2, division, city, state, postal_code, country, is_default)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'Bangladesh', true)`,
-      [user_id, address_line1, address_line2, division, district, upazila, postal_code]
+      `INSERT INTO addresses (address_id, user_id, address_line1, address_line2, division, city, state, postal_code, country, is_default)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Bangladesh', true)`,
+      [address_id, user_id, address_line1, address_line2, division, district, upazila, postal_code]
     );
 
     return res.status(201).json({ message: "User registered successfully" });
@@ -61,6 +69,7 @@ router.post("/", upload.single("profile_image"), async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 
