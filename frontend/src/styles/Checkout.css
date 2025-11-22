@@ -1,0 +1,105 @@
+/* ---------------------------------- */
+/* General Container and Layout */
+/* ---------------------------------- */
+
+.checkout-container {
+    /* Limit the overall width for a professional, centered look */
+    max-width: 1200px; 
+    margin: 0 auto;
+    padding: 20px 15px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa; /* Light background for the whole page */
+}
+
+/* ---------------------------------- */
+/* Typography and Headings */
+/* ---------------------------------- */
+
+.checkout-container h2 {
+    color: #343a40; /* Darker heading color */
+    margin-bottom: 25px !important;
+}
+
+/* ---------------------------------- */
+/* Card Overrides (for visual separation) */
+/* ---------------------------------- */
+
+/* Apply subtle box-shadows to distinguish sections */
+.col-md-7 > .p-4.border.rounded.shadow-sm,
+.card.shadow-lg {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #dee2e6 !important;
+}
+
+.col-md-7 > .p-4.border.rounded.shadow-sm:hover,
+.card.shadow-lg:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-2px); /* Slight lift on hover */
+}
+
+.card-header {
+    border-bottom: none;
+    border-radius: 0.25rem 0.25rem 0 0;
+}
+
+/* ---------------------------------- */
+/* Form Elements and Validation Feedback */
+/* ---------------------------------- */
+
+.form-control, .form-select {
+    border-radius: 0.3rem;
+    padding: 0.75rem 1rem;
+    box-shadow: none;
+}
+
+/* Custom styling for invalid fields to stand out */
+.form-control.is-invalid, .form-select.is-invalid {
+    border-color: #dc3545 !important;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: none !important; /* Override Bootstrap's default error icon if needed */
+}
+
+.invalid-feedback {
+    font-size: 0.875em;
+    font-weight: 500;
+}
+
+/* ---------------------------------- */
+/* Button Styling */
+/* ---------------------------------- */
+
+.btn-primary {
+    background-color: #007bff; /* Primary brand color */
+    border-color: #007bff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ---------------------------------- */
+/* Order Summary Details */
+/* ---------------------------------- */
+
+.item-details p {
+    font-size: 0.95rem;
+}
+
+.list-group-item {
+    font-size: 1.1rem;
+}
+
+.list-group-item .fw-bold.text-primary {
+    color: #007bff !important;
+}

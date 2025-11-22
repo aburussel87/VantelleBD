@@ -1,0 +1,136 @@
+/* OrderSuccess.css */
+
+/* General container styling */
+.order-success-container {
+    max-width: 960px; /* Slightly wider for better content flow */
+    margin: 40px auto;
+    font-family: 'Georgia', serif; /* Classic font for primary text */
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f9fa; /* Light background */
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Soft shadow */
+    padding: 30px; /* Internal padding */
+}
+
+/* Header and success message */
+.order-success-header h1 {
+    color: #28a745; /* Bootstrap success green */
+    font-family: 'Playfair Display', serif; /* More elegant heading font */
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.order-success-header p {
+    font-size: 1.1rem;
+    color: #555;
+}
+
+/* Order ID */
+.order-id-display {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #007bff; /* Primary blue for emphasis */
+    background-color: #e9ecef; /* Light gray background */
+    padding: 8px 15px;
+    border-radius: 5px;
+    display: inline-block;
+    margin-top: 10px;
+}
+
+/* Download button */
+.btn-download-pdf {
+    background-color: #343a40; /* Dark gray/black for contrast */
+    color: #fff;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 5px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+.btn-download-pdf:hover {
+    background-color: #000;
+    color: #fff;
+}
+
+/* Card sections for summary, address etc. */
+.order-detail-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.order-detail-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Product list items */
+.order-item-list .list-group-item {
+    border-color: #eee;
+    padding: 12px 0;
+    font-size: 1.05rem;
+    color: #444;
+}
+
+.order-item-list .list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* Total amounts */
+.order-summary-totals .list-group-item {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.order-summary-totals .list-group-item.grand-total {
+    background-color: #e2f0fe; /* Light blue for grand total */
+    font-size: 1.3rem;
+    font-weight: 700;
+    border-top: 2px solid #007bff;
+    color: #007bff;
+}
+
+/* Footer message */
+.order-success-footer {
+    font-style: italic;
+    color: #888;
+    margin-top: 30px;
+    font-size: 0.95rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .order-success-container {
+        margin: 20px 15px;
+        padding: 20px;
+    }
+    .order-success-header h1 {
+        font-size: 28px;
+    }
+    .order-id-display {
+        font-size: 1.1rem;
+        padding: 6px 12px;
+    }
+    .btn-download-pdf {
+        padding: 10px 20px;
+        font-size: 15px;
+    }
+    .order-detail-card {
+        padding: 20px;
+    }
+    .order-detail-card h3 {
+        font-size: 1.3rem;
+    }
+    .order-summary-totals .list-group-item.grand-total {
+        font-size: 1.2rem;
+    }
+}

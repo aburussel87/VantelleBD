@@ -21,7 +21,10 @@ const shopRoutes = require('./routes/shop');
 const loginRoutes = require('./routes/login');
 const registerRoutes = require('./routes/register');
 const updateRoutes = require('./routes/update');
-
+const cartRoutes = require('./routes/cart');
+const checkoutRoutes = require('./routes/checkout');
+const ordersRoutes = require('./routes/orders');
+const bdLocationsRoutes = require('./routes/bdLocations');
 
 // Use Routes
 app.use('/api/home', homeRoutes);
@@ -31,7 +34,10 @@ app.use('/api/shop', shopRoutes);
 app.use('/api/auth', loginRoutes);
 app.use('/api/register', registerRoutes);
 app.use('/api/update', updateRoutes);
-
+app.use('/api/cart', cartRoutes);
+app.use('/api/checkout', checkoutRoutes);
+app.use('/api/orders', ordersRoutes);
+app.use('/api/bd-locations', bdLocationsRoutes);
 
 
 

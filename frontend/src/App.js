@@ -9,14 +9,43 @@ import Cart from "./pages/Cart";
 import WhatsAppFloat from "./components/WhatsappFloat"; // optional floating icon
 import Register from "./pages/register";
 import ProfilePage from "./pages/profile";
-
+import CheckoutPage from "./pages/checkOutpage";
+import OrderSuccess from "./pages/order-success";
+import AllOrders from "./pages/orders";
 import "./styles/style.css";
+import React from "react";
+
+// ✅ ErrorBoundary definition
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.error(error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1 style={{ textAlign: "center", marginTop: "50px" }}>Something went wrong.</h1>;
+    }
+    return this.props.children;
+  }
+}
 
 function Layout() {
   const location = useLocation();
 
-  // ✅ Hide Navbar, Footer, and WhatsApp icon only on login page
-  const hideLayout = location.pathname === "/login" || location.pathname === "/register";
+  // Hide Navbar, Footer, and WhatsApp icon only on login/register/order-success pages
+  const hideLayout =
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname === "/order-success";
 
   return (
     <div className="App">
@@ -31,10 +60,13 @@ function Layout() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
+        <Route path="/orders" element={<AllOrders />} />
       </Routes>
 
       {!hideLayout && <Footer />}
-      {!hideLayout && <WhatsAppFloat />} {/* Optional floating icon */}
+      {!hideLayout && <WhatsAppFloat />}
     </div>
   );
 }
@@ -42,7 +74,10 @@ function Layout() {
 export default function App() {
   return (
     <Router>
-      <Layout />
+      {/* ✅ Wrap Layout with ErrorBoundary */}
+      <ErrorBoundary>
+        <Layout />
+      </ErrorBoundary>
     </Router>
   );
 }

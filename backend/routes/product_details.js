@@ -1,24 +1,3 @@
-// const express = require('express');
-// const router = express.Router();
-// const { get_product_by_id } = require('../database/query');
-
-// // GET /api/featured-products
-// router.get('/:id', async (req, res) => {
-//   try {
-//     const product = await get_product_by_id(req.params.id);
-//     res.json({
-//       success: true,
-//       data: product // send rows array
-//     });
-
-//   } catch (error) {
-//     console.error('Error fetching product details:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Internal Server Error'
-//     });
-//   }
-// });
 
 // module.exports = router;
 const express = require('express');

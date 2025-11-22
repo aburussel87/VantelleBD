@@ -112,10 +112,25 @@ async function get_user_with_addresses(id) {
   }
 }
 
+async function get_user_cart(id) { 
+  const query = `
+    SELECT * from vantelle.get_user_cart($1);
+  `;
+
+  try {
+    const result = await client.query(query,[id]);
+    return result.rows || []; 
+  } catch (err) {
+    console.error('❌ Error fetching user cart:', err.message);
+    throw err;
+  }
+}
+
 module.exports = {
     get_featured_products,
     get_product_by_id,
     getAllProductImages,
     getAllProducts,
-    get_user_with_addresses
+    get_user_with_addresses,
+    get_user_cart
 };

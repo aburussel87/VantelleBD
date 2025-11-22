@@ -68,7 +68,7 @@ export default function ProfilePage() {
 
   // Load divisions
   useEffect(() => {
-    fetch("https://bdapis.com/api/v1.1/divisions")
+    fetch(`${API_BASE_URL}/bd-locations/divisions`)
       .then((res) => res.json())
       .then((data) => setDivisions(data.data || []))
       .catch((err) => console.error("Division load error:", err));
@@ -80,7 +80,7 @@ export default function ProfilePage() {
     setUpazilas([]);
     if (formData.division) {
       const divisionName = encodeURIComponent(formData.division.toLowerCase());
-      fetch(`https://bdapis.com/api/v1.1/division/${divisionName}`)
+      fetch(`${API_BASE_URL}/bd-locations/districts/${divisionName}`)
         .then((res) => res.json())
         .then((data) => setDistricts(data.data || []))
         .catch((err) => console.error("District load error:", err));
@@ -109,7 +109,7 @@ export default function ProfilePage() {
     }
 
     const divisionName = encodeURIComponent(formData.division.toLowerCase());
-    fetch(`https://bdapis.com/api/v1.2/division/${divisionName}`)
+    fetch(`${API_BASE_URL}/bd-locations/upazilas/${divisionName}`)
       .then((res) => res.json())
       .then((data) => {
         if (data?.data) {

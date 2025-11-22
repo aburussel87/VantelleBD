@@ -92,6 +92,9 @@ export default function Login() {
             <p className="register-text">
               Don't have an account? <Link to="/register" style={{ color: "blue", textDecoration: "underline" }}>Register here</Link>
             </p>
+            <p className="guest-text">
+             Or <Link to="/home" style = {{color: "blue",textDecoration: "underline"}}>Visit as Guest</Link>
+            </p>
 
           </div>
         </div>

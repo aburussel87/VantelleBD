@@ -1,0 +1,153 @@
+const express = require('express');
+const router = express.Router();
+const { get_user_cart } = require('../database/query');
+const authenticate = require('../middleware/authenticate');
+const db = require('../database/db');
+// GET /api/cart
+router.get('/', authenticate, async (req, res) => {
+  try {
+    const userCart = await get_user_cart(req.user.user_id);
+    res.json({
+      success: true,
+      data: userCart
+    });
+    console.log('User cart fetched:', req.user.user_id);
+  } catch (error) {
+    console.error('Error fetching user cart:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error'
+    });
+  }
+});
+
+router.patch('/update', authenticate, async (req, res) => {
+  try {
+    const { cart_id, quantity } = req.body;
+
+    if (quantity < 1) {
+      return res.status(400).json({ success: false, message: "Invalid quantity" });
+    }
+    const productID = await db.query(
+      `
+      SELECT product_id
+      FROM vantelle.cart
+      WHERE id = $1 AND user_id = $2
+      `,
+      [cart_id, req.user.user_id]
+    );
+    if (productID.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Cart item not found" });
+    }
+    const product_id = productID.rows[0].product_id;
+
+    const inventory = await db.query(
+      'SELECT inventory FROM vantelle.products WHERE id = $1',
+      [product_id]
+    );
+    if (inventory.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Inventory not found" });
+    }
+    const inventoryData = inventory.rows[0];
+    if (quantity > inventoryData.inventory) {
+      return res.status(400).json({ success: false, message: "Requested quantity exceeds available stock" });
+    } 
+    await db.query(`
+      UPDATE vantelle.cart
+      SET quantity = $1
+      WHERE id = $2 AND user_id = $3
+    `, [quantity, cart_id, req.user.user_id]);
+      console.log("Qty updated:", req.user.user_id, quantity,"\n");
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error("Qty update error:", error);
+    res.status(500).json({ success: false });
+  }
+});
+
+router.delete('/:cart_id', authenticate, async (req, res) => {
+  try {
+    await db.query(`
+      DELETE FROM vantelle.cart
+      WHERE id = $1 AND user_id = $2
+    `, [req.params.cart_id, req.user.user_id]);
+
+    res.json({ success: true });
+      console.log("Item deleted from cart:", req.user.user_id, req.params.cart_id);
+  } catch (error) {
+    console.error("Delete error:", error);
+    res.status(500).json({ success: false });
+  }
+});
+
+router.post('/add', authenticate, async (req, res) => {
+  const { product_id, quantity = 1, size, color } = req.body;
+
+  if (!product_id) {
+    return res.status(400).json({ success: false, message: "Product ID is required" });
+  }
+
+  try {
+    // Get product details from products table, including discount info
+    const productResult = await db.query(
+      'SELECT price, inventory, status, discount, discount_type FROM vantelle.products WHERE id = $1',
+      [product_id]
+    );
+
+    if (productResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    const product = productResult.rows[0];
+
+    // Check status and inventory
+    if (product.status !== 'Active') {
+      return res.status(400).json({ success: false, message: "Product is not available right now" });
+    }
+    const currentCartResult = await db.query(
+      `
+      SELECT COALESCE(SUM(quantity), 0) AS total_quantity
+      FROM vantelle.cart
+      WHERE user_id = $1 AND product_id = $2
+      `,
+      [req.user.user_id, product_id]
+    );
+    const currentCartQuantity = parseInt(currentCartResult.rows[0].total_quantity, 10);
+    if (product.inventory <= 0 || (quantity + currentCartQuantity) > product.inventory) {
+      if (product.inventory <= 0) {
+        return res.status(400).json({ success: false, message: "Product is out of stock" });
+      }
+      return res.status(400).json({ success: false, message: "Requested quantity exceeds available stock" });
+    }
+
+    const unit_price = product.price;
+    const discount = product.discount || 0;
+    const discount_type = product.discount_type || 'None';
+
+    // Insert or update quantity if same variant exists
+    await db.query(
+      `
+      INSERT INTO vantelle.cart (user_id, product_id, quantity, unit_price, size, color, discount, discount_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ON CONFLICT (user_id, product_id, size, color)
+      DO UPDATE 
+        SET quantity = cart.quantity + EXCLUDED.quantity,
+            discount = EXCLUDED.discount,
+            discount_type = EXCLUDED.discount_type
+      `,
+      [req.user.user_id, product_id, quantity, unit_price, size || null, color || null, discount, discount_type]
+    );
+
+    res.json({ success: true, message: "Item added to cart successfully!" });
+    console.log("Item added to cart:", req.user.user_id, product_id);
+  } catch (err) {
+    console.error("Add to cart error:", err);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+});
+
+
+
+
+module.exports = router;

@@ -238,6 +238,7 @@ export default function Navbar() {
               <RouterNavLink to="/home" className="nav-link">Home</RouterNavLink>
               <RouterNavLink to="/shop" className="nav-link">Shop</RouterNavLink>
               <RouterNavLink to="/cart" className="nav-link">Cart</RouterNavLink>
+              <RouterNavLink to="/orders" className="nav-link">Orders</RouterNavLink>
             </div>
 
             {currentUser.isLoggedIn ? (
@@ -302,6 +303,7 @@ export default function Navbar() {
             <RouterNavLink to="/home" onClick={handleMobileLinkClick} className="nav-link">Home</RouterNavLink>
             <RouterNavLink to="/shop" onClick={handleMobileLinkClick} className="nav-link">Shop</RouterNavLink>
             <RouterNavLink to="/cart" onClick={handleMobileLinkClick} className="nav-link">Cart</RouterNavLink>
+            <RouterNavLink to="/orders" onClick={handleMobileLinkClick} className="nav-link">Orders</RouterNavLink>
 
             {currentUser.isLoggedIn ? (
               <>
@@ -338,7 +340,7 @@ export default function Navbar() {
                     localStorage.removeItem("user");
                     setMenuOpen(false);
                     window.location.reload();
-                    navigate("/");
+                    navigate("/home");
                   }}
                   style={{
                     color: "#ff6666",
