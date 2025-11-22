@@ -20,7 +20,7 @@ router.post("/login", async (req, res) => {
     console.log("Login attempt for identifier:", identifier);
     // Check user by email or phone
     const queryText = `
-      SELECT * FROM vantelle.users 
+      SELECT * FROM users 
       WHERE email = $1 OR phone = $1
     ORDER BY user_id ASC
       LIMIT 1

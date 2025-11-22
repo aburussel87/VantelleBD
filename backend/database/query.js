@@ -13,11 +13,11 @@ async function get_featured_products(){
                         'image', encode(pi.image_data, 'base64')  -- convert bytea to base64
                     )
                   )
-           FROM vantelle.product_images pi
+           FROM product_images pi
            WHERE pi.product_id = p.id AND pi.is_main = true
           ), '[]'
         ) AS images
-      FROM vantelle.products p
+      FROM products p
       WHERE p.is_featured = true
       ORDER BY p.created_at DESC
       LIMIT 10;
@@ -33,7 +33,7 @@ async function getAllProductImages(productId) {
       encode(image_data, 'base64') AS image_base64,
       is_main,
       created_at
-    FROM vantelle.product_images
+    FROM product_images
     WHERE product_id = $1
     ORDER BY is_main DESC, created_at ASC;
   `;
@@ -43,7 +43,7 @@ async function getAllProductImages(productId) {
 
 async function get_product_by_id(product_id){
     const query = `
-        SELECT * FROM vantelle.products
+        SELECT * FROM products
         WHERE id = $1;
     `;
     const values = [product_id];
@@ -81,8 +81,8 @@ async function getAllProducts() {
         ) FILTER (WHERE pi.id IS NOT NULL),
         '[]'
       ) AS images
-    FROM vantelle.products p
-    LEFT JOIN vantelle.product_images pi
+    FROM products p
+    LEFT JOIN product_images pi
       ON pi.product_id = p.id
     GROUP BY p.id
     ORDER BY p.created_at DESC, p.id ASC;
@@ -100,7 +100,7 @@ async function getAllProducts() {
 
 async function get_user_with_addresses(id) {
   const query = `
-    SELECT * from vantelle.get_user_with_addresses($1);
+    SELECT * from get_user_with_addresses($1);
   `;
 
   try {
@@ -114,7 +114,7 @@ async function get_user_with_addresses(id) {
 
 async function get_user_cart(id) { 
   const query = `
-    SELECT * from vantelle.get_user_cart($1);
+    SELECT * from get_user_cart($1);
   `;
 
   try {

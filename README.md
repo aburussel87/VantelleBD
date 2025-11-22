@@ -159,7 +159,7 @@ erDiagram
         string color
         numeric total_price
     }
-
+```
 ## Prerequisites
 
 - Node.js >= 18

@@ -11,13 +11,13 @@ router.get('/', authenticate, async (req, res) => {
     // Get user basic info
     const userRes = await db.query(`
       SELECT full_name, email, phone 
-      FROM vantelle.users WHERE user_id = $1
+      FROM users WHERE user_id = $1
     `, [user_id]);
 
     // Get default address
     const addrRes = await db.query(`
       SELECT *
-      FROM vantelle.addresses
+      FROM addresses
       WHERE user_id = $1 AND is_default = TRUE
       LIMIT 1
     `, [user_id]);
@@ -25,8 +25,8 @@ router.get('/', authenticate, async (req, res) => {
     // Get cart items
     const cartRes = await db.query(`
       SELECT c.*, p.title, p.inventory
-      FROM vantelle.cart c
-      JOIN vantelle.products p ON p.id = c.product_id
+      FROM cart c
+      JOIN products p ON p.id = c.product_id
       WHERE c.user_id = $1
     `, [user_id]);
 

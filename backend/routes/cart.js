@@ -31,7 +31,7 @@ router.patch('/update', authenticate, async (req, res) => {
     const productID = await db.query(
       `
       SELECT product_id
-      FROM vantelle.cart
+      FROM cart
       WHERE id = $1 AND user_id = $2
       `,
       [cart_id, req.user.user_id]
@@ -42,7 +42,7 @@ router.patch('/update', authenticate, async (req, res) => {
     const product_id = productID.rows[0].product_id;
 
     const inventory = await db.query(
-      'SELECT inventory FROM vantelle.products WHERE id = $1',
+      'SELECT inventory FROM products WHERE id = $1',
       [product_id]
     );
     if (inventory.rows.length === 0) {
@@ -53,7 +53,7 @@ router.patch('/update', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: "Requested quantity exceeds available stock" });
     } 
     await db.query(`
-      UPDATE vantelle.cart
+      UPDATE cart
       SET quantity = $1
       WHERE id = $2 AND user_id = $3
     `, [quantity, cart_id, req.user.user_id]);
@@ -69,7 +69,7 @@ router.patch('/update', authenticate, async (req, res) => {
 router.delete('/:cart_id', authenticate, async (req, res) => {
   try {
     await db.query(`
-      DELETE FROM vantelle.cart
+      DELETE FROM cart
       WHERE id = $1 AND user_id = $2
     `, [req.params.cart_id, req.user.user_id]);
 
@@ -91,7 +91,7 @@ router.post('/add', authenticate, async (req, res) => {
   try {
     // Get product details from products table, including discount info
     const productResult = await db.query(
-      'SELECT price, inventory, status, discount, discount_type FROM vantelle.products WHERE id = $1',
+      'SELECT price, inventory, status, discount, discount_type FROM products WHERE id = $1',
       [product_id]
     );
 
@@ -108,7 +108,7 @@ router.post('/add', authenticate, async (req, res) => {
     const currentCartResult = await db.query(
       `
       SELECT COALESCE(SUM(quantity), 0) AS total_quantity
-      FROM vantelle.cart
+      FROM cart
       WHERE user_id = $1 AND product_id = $2
       `,
       [req.user.user_id, product_id]
@@ -128,7 +128,7 @@ router.post('/add', authenticate, async (req, res) => {
     // Insert or update quantity if same variant exists
     await db.query(
       `
-      INSERT INTO vantelle.cart (user_id, product_id, quantity, unit_price, size, color, discount, discount_type)
+      INSERT INTO cart (user_id, product_id, quantity, unit_price, size, color, discount, discount_type)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       ON CONFLICT (user_id, product_id, size, color)
       DO UPDATE 

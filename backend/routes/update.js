@@ -34,7 +34,7 @@ router.put("/", verifyToken, upload.single("profile_image"), async (req, res) =>
     await client.query("BEGIN");
 
     // 1️⃣ Fetch existing user
-    const userRes = await client.query("SELECT * FROM vantelle.users WHERE user_id = $1", [user_id]);
+    const userRes = await client.query("SELECT * FROM users WHERE user_id = $1", [user_id]);
     if (userRes.rows.length === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "User not found" });
@@ -51,7 +51,7 @@ router.put("/", verifyToken, upload.single("profile_image"), async (req, res) =>
       }
 
       const hashedPassword = await bcrypt.hash(new_password, 10);
-      await client.query("UPDATE vantelle.users SET password_hash = $1 WHERE user_id = $2", [
+      await client.query("UPDATE users SET password_hash = $1 WHERE user_id = $2", [
         hashedPassword,
         user_id,
       ]);
@@ -61,7 +61,7 @@ router.put("/", verifyToken, upload.single("profile_image"), async (req, res) =>
     let profileImageBuffer = req.file ? req.file.buffer : user.profile_image;
 
     await client.query(
-      `UPDATE vantelle.users 
+      `UPDATE users 
        SET full_name = $1, email = $2, phone = $3, gender = $4, profile_image = $5
        WHERE user_id = $6`,
       [full_name, email, phone, gender, profileImageBuffer, user_id]
@@ -69,20 +69,20 @@ router.put("/", verifyToken, upload.single("profile_image"), async (req, res) =>
 
     // 4️⃣ Update address info (assuming addresses table)
     const existingAddress = await client.query(
-      "SELECT * FROM vantelle.addresses WHERE user_id = $1",
+      "SELECT * FROM addresses WHERE user_id = $1",
       [user_id]
     );
 
     if (existingAddress.rows.length > 0) {
       await client.query(
-        `UPDATE vantelle.addresses
+        `UPDATE addresses
          SET division = $1, city = $2, state = $3, address_line1 = $4, address_line2 = $5, postal_code = $6
          WHERE user_id = $7`,
         [division, district, upazila, address_line1, address_line2, postal_code, user_id]
       );
     } else {
       await client.query(
-        `INSERT INTO vantelle.addresses (user_id, division, city, state, address_line1, address_line2, postal_code)
+        `INSERT INTO addresses (user_id, division, city, state, address_line1, address_line2, postal_code)
          VALUES ($1,$2,$3,$4,$5,$6,$7)`,
         [user_id, division, district, upazila, address_line1, address_line2, postal_code]
       );
@@ -101,8 +101,8 @@ router.put("/", verifyToken, upload.single("profile_image"), async (req, res) =>
                 'address_line2', a.address_line2,
                 'postal_code', a.postal_code
               ) AS addresses
-       FROM vantelle.users u
-       LEFT JOIN vantelle.addresses a ON u.user_id = a.user_id
+       FROM users u
+       LEFT JOIN addresses a ON u.user_id = a.user_id
        WHERE u.user_id = $1`,
       [user_id]
     );

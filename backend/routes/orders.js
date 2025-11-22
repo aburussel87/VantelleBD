@@ -26,7 +26,7 @@ router.post("/place", authenticate, async (req, res) => {
     try {
         // Get cart items
         const cartRes = await db.query(
-            `SELECT * FROM vantelle.cart WHERE user_id = $1`,
+            `SELECT * FROM cart WHERE user_id = $1`,
             [user_id]
         );
 
@@ -64,7 +64,7 @@ router.post("/place", authenticate, async (req, res) => {
 
         // Insert order
         const orderRes = await db.query(`
-            INSERT INTO vantelle.orders 
+            INSERT INTO orders 
             (user_id, total_amount, payment_method, shipping_address, shipping_fee, estimated_delivery,notes)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING order_id
@@ -81,7 +81,7 @@ router.post("/place", authenticate, async (req, res) => {
 
         // Update order with tracking number
         await db.query(`
-            UPDATE vantelle.orders
+            UPDATE orders
             SET tracking_number = $1
             WHERE order_id = $2
         `, [tracking_number, order_id]);
@@ -97,7 +97,7 @@ router.post("/place", authenticate, async (req, res) => {
             const totalPrice = finalUnit * item.quantity;
 
             await db.query(`
-                INSERT INTO vantelle.order_items (
+                INSERT INTO order_items (
                     order_id, product_id, quantity, unit_price,
                     discount, discount_type, size, color, total_price
                 )
@@ -109,14 +109,14 @@ router.post("/place", authenticate, async (req, res) => {
 
             // Reduce inventory
             await db.query(`
-                UPDATE vantelle.products 
+                UPDATE products 
                 SET inventory = inventory - $1 
                 WHERE id = $2
             `, [item.quantity, item.product_id]);
         }
 
         // Clear cart
-        await db.query(`DELETE FROM vantelle.cart WHERE user_id = $1`, [user_id]);
+        await db.query(`DELETE FROM cart WHERE user_id = $1`, [user_id]);
 
         res.json({
             success: true,
@@ -148,7 +148,7 @@ router.get("/details/:order_id", authenticate, async (req, res) => {
   try {
     const orderQ = await db.query(
       `SELECT o.*, to_char(o.order_date, 'YYYY-MM-DD HH24:MI') as order_date_fmt
-       FROM vantelle.orders o
+       FROM orders o
        WHERE o.order_id = $1`,
       [order_id]
     );
@@ -161,8 +161,8 @@ router.get("/details/:order_id", authenticate, async (req, res) => {
 
     const itemsQ = await db.query(
       `SELECT oi.*, p.title as product_name
-       FROM vantelle.order_items oi
-       LEFT JOIN vantelle.products p ON p.id = oi.product_id
+       FROM order_items oi
+       LEFT JOIN products p ON p.id = oi.product_id
        WHERE oi.order_id = $1`,
       [order_id]
     );
@@ -258,7 +258,7 @@ router.get("/allOrders", authenticate, async (req, res) => {
     // Fetch all orders for this user
     const ordersQ = await db.query(
       `SELECT o.*, to_char(o.order_date, 'YYYY-MM-DD HH24:MI') as order_date_fmt
-       FROM vantelle.orders o
+       FROM orders o
        WHERE o.user_id = $1
        ORDER BY o.order_date DESC`,
       [user_id]
@@ -297,8 +297,8 @@ router.get("/allOrders", authenticate, async (req, res) => {
       // Fetch order items summary (optional: just basic info)
       const itemsQ = await db.query(
         `SELECT oi.*, p.title as product_name
-         FROM vantelle.order_items oi
-         LEFT JOIN vantelle.products p ON p.id = oi.product_id
+         FROM order_items oi
+         LEFT JOIN products p ON p.id = oi.product_id
          WHERE oi.order_id = $1`,
         [order.order_id]
       );
@@ -346,7 +346,7 @@ router.patch("/cancel/:order_id", authenticate, async (req, res) => {
 
   try {
     const result = await db.query(
-      `UPDATE vantelle.orders
+      `UPDATE orders
        SET status = 'Cancelled'
        WHERE order_id = $1 AND user_id = $2 AND status = 'Pending'
        RETURNING *`,
