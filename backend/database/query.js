@@ -6,6 +6,8 @@ async function get_featured_products(){
         p.id,
         p.title,
         p.price,
+        p.discount,
+        p.discount_type,
         COALESCE(
           (SELECT json_agg(
                     json_build_object(

@@ -19,6 +19,8 @@ export default function Home() {
           const formatted = data.data.map((product) => ({
             id: product.id,
             name: product.title,
+            discount: product.discount,
+            discount_type: product.discount_type,
             price: parseFloat(product.price),
             image:
               product.images && product.images.length > 0

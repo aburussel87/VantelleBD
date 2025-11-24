@@ -1,0 +1,10 @@
+/* --- Add this to your ProductList.css or similar file --- */
+
+/* Ensures the pricing elements are displayed inline */
+.product-card .pricing-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Aligns content to the left */
+    margin-top: 5px; /* Adds spacing below title */
+}
+

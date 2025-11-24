@@ -5,7 +5,7 @@ import API_BASE_URL from "./config";
 // Helper function to find the inventory for the selected size and color variant
 const getVariantInventory = (variants, size, color) => {
   if (!variants || !size || !color) return 0;
-  
+
   // Find the exact variant match
   const variant = variants.find(
     (v) => v.size === size && v.color === color
@@ -64,23 +64,50 @@ export default function ProductDetails() {
   // -------------------------------------------------------------------
 
   // Calculate Current Inventory for the selected variant
-  const currentInventory = useMemo(() => 
+  const currentInventory = useMemo(() =>
     getVariantInventory(product?.variants, selectedSize, selectedColor),
     [product, selectedSize, selectedColor]
   );
-  
+
   const isOutOfStock = currentInventory <= 0;
 
   // Extract unique options from the variants array
-  const uniqueSizes = useMemo(() => 
+  const uniqueSizes = useMemo(() =>
     [...new Set(product?.variants?.map(v => v.size))].sort(),
     [product?.variants]
   );
-  const uniqueColors = useMemo(() => 
+  const uniqueColors = useMemo(() =>
     [...new Set(product?.variants?.map(v => v.color))].sort(),
     [product?.variants]
   );
-  
+
+  // -------------------------------------------------------------------
+  // --- PRICE CALCULATION LOGIC ---
+  // -------------------------------------------------------------------
+  const originalPrice = useMemo(() => parseFloat(product?.price) || 0, [product?.price]);
+
+  const { finalPrice, isDiscounted } = useMemo(() => {
+    const discountValue = parseFloat(product?.discount) || 0;
+    const discountType = product?.discount_type;
+    let calculatedPrice = originalPrice;
+
+    if (discountValue > 0) {
+      if (discountType === "Percentage") {
+        calculatedPrice = originalPrice * (1 - discountValue / 100);
+      } else if (discountType === "Flat") {
+        calculatedPrice = originalPrice - discountValue;
+      }
+    }
+    
+    // Ensure price is not negative
+    calculatedPrice = Math.max(0, calculatedPrice);
+
+    return { 
+      finalPrice: calculatedPrice, 
+      isDiscounted: calculatedPrice < originalPrice 
+    };
+  }, [originalPrice, product?.discount, product?.discount_type]);
+
   // -------------------------------------------------------------------
   // --- 3. CONDITIONAL RETURNS (After all Hooks) ---
   // -------------------------------------------------------------------
@@ -103,7 +130,7 @@ export default function ProductDetails() {
       showNotification("Selected variant is out of stock.", "error");
       return;
     }
-    
+
     const cartItem = {
       product_id: product.id,
       quantity: 1,
@@ -134,7 +161,8 @@ export default function ProductDetails() {
         const cartItemGuest = {
           product_id: product.id,
           name: product.title,
-          price: parseFloat(product.price),
+          // Use the final discounted price for the cart item
+          price: finalPrice, 
           qty: 1,
           size: selectedSize,
           color: selectedColor,
@@ -258,97 +286,132 @@ export default function ProductDetails() {
 
       {/* Right Section: Product Info */}
       <div style={{ flex: "1 1 300px", maxWidth: "500px" }}>
-        <h2 style={{ fontSize: "2rem", marginBottom: "1rem" }}>{product.title}</h2>
+        <h2 style={{ fontSize: "2rem", marginBottom: "1rem", fontWeight: "bold" }}>{product.title}</h2>
+
+        {/* --- FIXED: Price and Stock Status --- */}
+        <div style={{ marginBottom: "0.5rem", display: 'flex', alignItems: 'center', gap: '15px' }}>
+            {isDiscounted && (
+                <p 
+                    style={{ 
+                        fontSize: "1.2rem", 
+                        fontWeight: "normal", 
+                        color: "#999", 
+                        textDecoration: "line-through" 
+                    }}
+                >
+                    ৳{originalPrice.toFixed(2)}
+                </p>
+            )}
+            <p 
+                style={{ 
+                    fontSize: isDiscounted ? "2rem" : "1.5rem", 
+                    fontWeight: "bold", 
+                    color: isDiscounted ? "#e74c3c" : "black" /* Highlight discounted price in red */
+                }}
+            >
+                ৳{finalPrice.toFixed(2)}
+            </p>
+        </div>
         
-        {/* Price and Stock Status */}
-        <p style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
-          ৳{parseFloat(product.price).toFixed(2)}
-        </p>
-        <p style={{ 
-            fontSize: "1rem", 
-            marginBottom: "1rem", 
-            color: isOutOfStock ? "#f44336" : "#4caf50",
-            fontWeight: "bold"
+        <p style={{
+          fontSize: "1rem",
+          marginBottom: "1rem",
+          color: isOutOfStock ? "#f44336" : "#4caf50",
+          fontWeight: "bold"
         }}>
           Status: {isOutOfStock ? "Out of Stock" : "In Stock"} ({currentInventory} available)
         </p>
 
-        <p style={{ marginBottom: "1rem", lineHeight: "1.6" }}>{product.description}</p>
+        <p style={{ marginBottom: "1rem", lineHeight: "1.6", fontStyle: "italic"}}>{product.description}</p>
 
         <ul style={{ marginBottom: "1.5rem", lineHeight: "1.6" }}>
           <li><strong>Category:</strong> {product.category}</li>
-          <li><strong>Discount:</strong> ৳{product.discount || 0} ({product.discount_type || "None"})</li>
+          <li>
+            <strong>Discount:</strong>{" "}
+            <span
+              style={{
+                color: isDiscounted ? "green" : "gray",
+                fontWeight: "bold",
+                borderRadius: "4px",
+                padding: "2px 6px",
+                backgroundColor: isDiscounted ? "#e0f7e9" : "#f0f0f0",
+              }}
+            >
+              {product.discount_type === "Flat" ? "৳" : ""}{product.discount || 0}
+              {product.discount_type === "Percentage" ? "%" : ""}
+            </span>
+          </li>
           <li><strong>Gender:</strong> {product.gender}</li>
           <li><strong>Season:</strong> {product.season}</li>
         </ul>
 
         {/* --- SELECTABLE SIZE BUTTONS (Inline Layout) --- */}
         {uniqueSizes.length > 0 && (
-            <div 
-                style={{ 
-                    marginBottom: "1rem", 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '15px'
-                }}
-            >
-                <strong style={{ margin: 0, whiteSpace: 'nowrap' }}>Size:</strong>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {uniqueSizes.map((s) => (
-                      <div
-                        key={s}
-                        onClick={() => setSelectedSize(s)}
-                        style={{
-                          padding: '8px 15px',
-                          border: s === selectedSize ? '2px solid black' : '1px solid #ccc',
-                          borderRadius: '5px',
-                          cursor: 'pointer',
-                          fontWeight: s === selectedSize ? 'bold' : 'normal',
-                          backgroundColor: s === selectedSize ? '#f0f0f0' : 'white',
-                          transition: '0.2s',
-                        }}
-                      >
-                        {s}
-                      </div>
-                    ))}
+          <div
+            style={{
+              marginBottom: "1rem",
+              display: 'flex',
+              alignItems: 'center',
+              gap: '15px'
+            }}
+          >
+            <strong style={{ margin: 0, whiteSpace: 'nowrap' }}>Size:</strong>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {uniqueSizes.map((s) => (
+                <div
+                  key={s}
+                  onClick={() => setSelectedSize(s)}
+                  style={{
+                    padding: '8px 15px',
+                    border: s === selectedSize ? '2px solid black' : '1px solid #ccc',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontWeight: s === selectedSize ? 'bold' : 'normal',
+                    backgroundColor: s === selectedSize ? '#f0f0f0' : 'white',
+                    transition: '0.2s',
+                  }}
+                >
+                  {s}
                 </div>
+              ))}
             </div>
+          </div>
         )}
 
         {/* --- SELECTABLE COLOR SWATCHES (Inline Layout) --- */}
         {uniqueColors.length > 0 && (
-            <div 
-                style={{ 
-                    marginBottom: "1.5rem", 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '15px'
-                }}
-            >
-                <strong style={{ margin: 0, whiteSpace: 'nowrap' }}>Color:</strong>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {uniqueColors.map((c) => (
-                      <div
-                        key={c}
-                        onClick={() => setSelectedColor(c)}
-                        title={c}
-                        style={{
-                          width: '30px',
-                          height: '30px',
-                          borderRadius: '50%',
-                          backgroundColor: c, // Assumes color string is a valid CSS color
-                          cursor: 'pointer',
-                          border: c === selectedColor ? '3px solid #333' : '2px solid #ccc',
-                          outline: c === selectedColor ? '2px solid white' : 'none',
-                          boxShadow: c === selectedColor ? '0 0 0 2px #333' : 'none',
-                          transition: '0.2s',
-                        }}
-                      >
-                        {/* Swatch content */}
-                      </div>
-                    ))}
+          <div
+            style={{
+              marginBottom: "1.5rem",
+              display: 'flex',
+              alignItems: 'center',
+              gap: '15px'
+            }}
+          >
+            <strong style={{ margin: 0, whiteSpace: 'nowrap' }}>Color:</strong>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {uniqueColors.map((c) => (
+                <div
+                  key={c}
+                  onClick={() => setSelectedColor(c)}
+                  title={c}
+                  style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    backgroundColor: c, // Assumes color string is a valid CSS color
+                    cursor: 'pointer',
+                    border: c === selectedColor ? '3px solid #333' : '2px solid #ccc',
+                    outline: c === selectedColor ? '2px solid white' : 'none',
+                    boxShadow: c === selectedColor ? '0 0 0 2px #333' : 'none',
+                    transition: '0.2s',
+                  }}
+                >
+                  {/* Swatch content */}
                 </div>
+              ))}
             </div>
+          </div>
         )}
 
         <button

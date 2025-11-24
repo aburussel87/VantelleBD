@@ -35,8 +35,9 @@ export default function Shop() {
           const mappedProducts = data.data.map((p) => ({
             id: p.id,
             name: p.title,
+            discount: p.discount,
+            discount_type: p.discount_type,
             price: parseFloat(p.price),
-            // Use 'All' if gender is missing, for consistency
             category: p.gender || "All", 
             subcategory: p.category || "Other",
             image:
