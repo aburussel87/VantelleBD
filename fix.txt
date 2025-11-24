@@ -1,2 +1,5 @@
-1. register.js(route) has query
-2. login.js(route) has query
+- guests now can add to cart - but during updating cart in cart.jsx, inventory is not checked(need to be fixed)
+- guests cannot order items
+- jwt token is stored in local storage, should not keep such unsafe code 
+  ( convert to cookie so that automatically passed, no need to store jwt in local storage or other way)
+- 

@@ -41,14 +41,53 @@ async function getAllProductImages(productId) {
   return result.rows; 
 }
 
-async function get_product_by_id(product_id){
-    const query = `
-        SELECT * FROM products
-        WHERE id = $1;
-    `;
-    const values = [product_id];
-    const result = await client.query(query, values);
-    return result.rows[0];
+async function get_product_by_id(product_id) {
+  const query = `
+    SELECT
+  p.id,
+  p.title,
+  p.description,
+  p.price,
+  p.discount,
+  p.discount_type,
+  p.gender,
+  p.season,
+  p.status,
+  p.category,
+  SUM(i.inventory) AS inventory,
+  COALESCE(json_agg(DISTINCT i.size) FILTER (WHERE i.size IS NOT NULL), '[]') AS size_options,
+  COALESCE(string_agg(DISTINCT i.color, ','), '') AS color,
+  COALESCE(
+    json_agg(
+      DISTINCT jsonb_build_object(
+        'id', pi.id,
+        'image', encode(pi.image_data, 'base64'),
+        'is_main', pi.is_main,
+        'created_at', pi.created_at
+      )
+    ) FILTER (WHERE pi.id IS NOT NULL),
+    '[]'
+  ) AS images,
+  COALESCE(
+    json_agg(
+      DISTINCT jsonb_build_object(
+        'color', i.color,
+        'size', i.size,
+        'inventory', i.inventory
+      )
+    ) FILTER (WHERE i.size IS NOT NULL AND i.color IS NOT NULL),
+    '[]'
+  ) AS variants
+FROM products p
+LEFT JOIN inventory i ON i.product_id = p.id
+LEFT JOIN product_images pi ON pi.product_id = p.id
+WHERE p.id = $1
+GROUP BY 
+  p.id, p.title, p.description, p.price, p.discount, p.discount_type, p.gender, p.season,p.status,p.category;
+  `;
+  const values = [product_id];
+  const result = await client.query(query, values);
+  return result.rows[0];
 }
 
 
@@ -61,10 +100,11 @@ async function getAllProducts() {
       p.description,
       p.price,
       p.discount,
-      p.inventory,
+      p.discount_type,
+      SUM(i.inventory) AS inventory,
       p.category,
-      p.color,
-      p.size_options,
+      COALESCE(json_agg(DISTINCT i.size) FILTER (WHERE i.size IS NOT NULL), '[]') AS size_options,
+      COALESCE(string_agg(DISTINCT i.color, ','), '') AS color,
       p.created_at,
       p.updated_at,
       p.is_featured,
@@ -72,7 +112,7 @@ async function getAllProducts() {
       p.season,
       COALESCE(
         json_agg(
-          json_build_object(
+          DISTINCT jsonb_build_object(
             'id', pi.id,
             'image', encode(pi.image_data, 'base64'),
             'is_main', pi.is_main,
@@ -80,25 +120,32 @@ async function getAllProducts() {
           )
         ) FILTER (WHERE pi.id IS NOT NULL),
         '[]'
-      ) AS images
+      ) AS images,
+      COALESCE(
+        json_agg(
+          DISTINCT jsonb_build_object(
+            'color', i.color,
+            'size', i.size,
+            'inventory', i.inventory
+          )
+        ) FILTER (WHERE i.size IS NOT NULL AND i.color IS NOT NULL),
+        '[]'
+      ) AS variants
     FROM products p
+    LEFT JOIN inventory i
+      ON i.product_id = p.id
     LEFT JOIN product_images pi
       ON pi.product_id = p.id
     GROUP BY 
-      p.id, p.title, p.description, p.price, p.discount, p.inventory, 
-      p.category, p.color, p.size_options, p.created_at, p.updated_at,
-      p.is_featured, p.gender, p.season
+      p.id, p.title, p.description, p.price, p.discount, p.discount_type, p.category, 
+      p.created_at, p.updated_at, p.is_featured, p.gender, p.season
     ORDER BY p.created_at DESC, p.id ASC;
   `;
 
-  try {
-    const result = await client.query(query);
-    return result.rows; 
-  } catch (err) {
-    console.error('❌ Error fetching all products:', err.message);
-    throw err;
-  }
+  const result = await client.query(query);
+  return result.rows;
 }
+
 
 
 

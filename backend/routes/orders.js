@@ -23,128 +23,128 @@ function generateOrderItemId(orderId, productId) {
 }
 
 router.post("/place", authenticate, async (req, res) => {
-    const { 
-        full_name, email, phone, division, district, upazila, 
-        address_line1, address_line2, payment_method, shipping_fee,notes
-    } = req.body;
+  const {
+    full_name, email, phone, division, district, upazila,
+    address_line1, address_line2, payment_method, shipping_fee, notes
+  } = req.body;
 
-    const user_id = String(req.user.user_id);
+  const user_id = String(req.user.user_id);
 
-    const structured_address = JSON.stringify({
-        full_name,
-        phone,
-        email,
-        address_line1,
-        address_line2,
-        upazila: upazila || "",
-        district,
-        division
+  const structured_address = JSON.stringify({
+    full_name,
+    phone,
+    email,
+    address_line1,
+    address_line2,
+    upazila: upazila || "",
+    district,
+    division
+  });
+
+  try {
+    // Get cart items
+    const cartRes = await db.query(
+      `SELECT * FROM cart WHERE user_id = $1`,
+      [user_id]
+    );
+
+    if (cartRes.rows.length === 0)
+      return res.status(400).json({ success: false, message: "Cart is empty" });
+
+    let total_amount = 0;
+
+    cartRes.rows.forEach(item => {
+      const discountAmount =
+        item.discount_type === "Percentage"
+          ? item.unit_price * (item.discount / 100)
+          : item.discount;
+
+      const finalUnit = item.unit_price - discountAmount;
+      total_amount += finalUnit * item.quantity;
     });
 
-    try {
-        // Get cart items
-        const cartRes = await db.query(
-            `SELECT * FROM cart WHERE user_id = $1`,
-            [user_id]
-        );
+    // Calculate estimated delivery
+    const now = new Date();
+    let estimated_delivery = new Date(now);
 
-        if (cartRes.rows.length === 0)
-            return res.status(400).json({ success: false, message: "Cart is empty" });
+    if (district?.toLowerCase() === "dhaka") {
+      estimated_delivery.setDate(now.getDate() + 2);
+    } else {
+      estimated_delivery.setDate(now.getDate() + 5);
+    }
 
-        let total_amount = 0;
+    // Format delivery date (e.g., "02 November, Thursday")
+    const formatted_delivery = estimated_delivery.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "long",
+      weekday: "long"
+    });
 
-        cartRes.rows.forEach(item => {
-            const discountAmount =
-                item.discount_type === "Percentage"
-                    ? item.unit_price * (item.discount / 100)
-                    : item.discount;
-
-            const finalUnit = item.unit_price - discountAmount;
-            total_amount += finalUnit * item.quantity;
-        });
-
-        // Calculate estimated delivery
-        const now = new Date();
-        let estimated_delivery = new Date(now);
-
-        if (district?.toLowerCase() === "dhaka") {
-            estimated_delivery.setDate(now.getDate() + 2);
-        } else {
-            estimated_delivery.setDate(now.getDate() + 5);
-        }
-
-        // Format delivery date (e.g., "02 November, Thursday")
-        const formatted_delivery = estimated_delivery.toLocaleDateString("en-US", {
-            day: "2-digit",
-            month: "long",
-            weekday: "long"
-        });
-
-        // Insert order
-        const orderId = generateOrderId(user_id);
-        const trackingNumber = generateTrackingNumber(orderId);
-        const orderRes = await db.query(`
+    // Insert order
+    const orderId = generateOrderId(user_id);
+    const trackingNumber = generateTrackingNumber(orderId);
+    const orderRes = await db.query(`
             INSERT INTO orders 
             (order_id, user_id, total_amount, payment_method, shipping_address, shipping_fee, estimated_delivery,notes, tracking_number,created_at,updated_at,status,payment_status,order_date)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), 'Pending', 'Pending', NOW())
             RETURNING order_id
         `, [
-            orderId, user_id, total_amount, payment_method, structured_address,
-            shipping_fee, formatted_delivery, notes, trackingNumber
-        ]);
+      orderId, user_id, total_amount, payment_method, structured_address,
+      shipping_fee, formatted_delivery, notes, trackingNumber
+    ]);
 
-        
-        // Insert order items
-        for (let item of cartRes.rows) {
-            const discountAmount =
-                item.discount_type === "Percentage"
-                    ? item.unit_price * (item.discount / 100)
-                    : item.discount;
 
-            const finalUnit = item.unit_price - discountAmount;
-            const totalPrice = finalUnit * item.quantity;
-            const orderItemId = generateOrderItemId(orderId, item.product_id);
-            await db.query(`
+    // Insert order items
+    for (let item of cartRes.rows) {
+      const discountAmount =
+        item.discount_type === "Percentage"
+          ? item.unit_price * (item.discount / 100)
+          : item.discount;
+
+      const finalUnit = item.unit_price - discountAmount;
+      const totalPrice = finalUnit * item.quantity;
+      const orderItemId = generateOrderItemId(orderId, item.product_id);
+      await db.query(`
                 INSERT INTO order_items (
                     id, order_id, product_id, quantity, unit_price,
                     discount, discount_type, size, color, total_price
                 )
                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
             `, [
-                orderItemId, orderId, item.product_id, item.quantity, item.unit_price,
-                item.discount, item.discount_type, item.size, item.color, totalPrice
-            ]);
+        orderItemId, orderId, item.product_id, item.quantity, item.unit_price,
+        item.discount, item.discount_type, item.size, item.color, totalPrice
+      ]);
 
-            // Reduce inventory
-            await db.query(`
-                UPDATE products 
-                SET inventory = inventory - $1 
-                WHERE id = $2
-            `, [item.quantity, item.product_id]);
-        }
-
-        // Clear cart
-        await db.query(`DELETE FROM cart WHERE user_id = $1`, [user_id]);
-
-        res.json({
-            success: true,
-            message: "Order placed!",
-            order_id: orderId,
-            tracking_number: trackingNumber,
-            estimated_delivery: formatted_delivery
-        });
-
-        console.log("Order placed:", {
-            user_id,
-            order_id: orderId,
-            tracking_number: trackingNumber,
-            estimated_delivery: formatted_delivery
-        });
-
-    } catch (err) {
-        console.error("Order place error:", err);
-        res.status(500).json({ success: false, message: "Order failed" });
+      // Reduce inventory
+      await db.query(`
+    UPDATE inventory
+    SET inventory = inventory - $1
+    WHERE product_id = $2 AND size = $3 AND color = $4
+`, [item.quantity, item.product_id, item.size, item.color]);
     }
+
+    // Clear cart
+    await db.query(`DELETE FROM cart WHERE user_id = $1`, [user_id]);
+
+    res.json({
+      success: true,
+      message: "Order placed!",
+      order_id: orderId,
+      tracking_number: trackingNumber,
+      estimated_delivery: formatted_delivery
+    });
+
+    console.log("Order placed:", {
+      user_id,
+      order_id: orderId,
+      tracking_number: trackingNumber,
+      estimated_delivery: formatted_delivery
+    });
+
+  } catch (err) {
+    console.error("Order place error:", err);
+    res.status(500).json({ success: false, message: "Order failed" });
+  }
 });
 
 
@@ -184,7 +184,7 @@ router.get("/details/:order_id", authenticate, async (req, res) => {
     try {
       // 1. Try to parse as JSON (New orders)
       const parsedJson = JSON.parse(rawAddress);
-      
+
       shipping.full_name = parsedJson.full_name || "N/A";
       shipping.phone = parsedJson.phone || "N/A";
       shipping.email = parsedJson.email || "N/A";
@@ -193,7 +193,7 @@ router.get("/details/:order_id", authenticate, async (req, res) => {
       shipping.upazila = parsedJson.upazila || "N/A";
       shipping.district = parsedJson.district || "N/A";
       shipping.division = parsedJson.division || "N/A";
-      
+
       // Construct combined full address string
       shipping.full_address = (shipping.address_line1 || '') + (shipping.address_line2 ? `, ${shipping.address_line2}` : '');
 
@@ -218,7 +218,7 @@ router.get("/details/:order_id", authenticate, async (req, res) => {
         shipping.full_address = rawAddress;
       }
     }
-    
+
     // Ensure full_address isn't empty after parsing
     shipping.full_address = shipping.full_address || "Address details incomplete";
 
@@ -353,6 +353,19 @@ router.patch("/cancel/:order_id", authenticate, async (req, res) => {
   const user_id = String(req.user.user_id);
 
   try {
+    // 1️⃣ Fetch order items before cancelling
+    const itemsRes = await db.query(
+      `SELECT product_id, quantity, size, color
+       FROM order_items
+       WHERE order_id = $1`,
+      [order_id]
+    );
+
+    if (itemsRes.rows.length === 0) {
+      return res.json({ success: false, message: "Order not found or has no items" });
+    }
+
+    // 2️⃣ Update order status to 'Cancelled'
     const result = await db.query(
       `UPDATE orders
        SET status = 'Cancelled'
@@ -365,12 +378,24 @@ router.patch("/cancel/:order_id", authenticate, async (req, res) => {
       return res.json({ success: false, message: "Order not found or cannot be cancelled" });
     }
 
-    res.json({ success: true, message: "Order cancelled successfully" });
+    // 3️⃣ Restore inventory for each item
+    for (const item of itemsRes.rows) {
+      await db.query(
+        `UPDATE inventory
+         SET inventory = inventory + $1
+         WHERE product_id = $2 AND size = $3 AND color = $4`,
+        [item.quantity, item.product_id, item.size, item.color]
+      );
+    }
+
+    res.json({ success: true, message: "Order cancelled and inventory restored successfully" });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 
 module.exports = router;

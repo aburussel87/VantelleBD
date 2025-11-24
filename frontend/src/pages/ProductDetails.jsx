@@ -1,6 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import API_BASE_URL from "./config";
+
+// Helper function to find the inventory for the selected size and color variant
+const getVariantInventory = (variants, size, color) => {
+  if (!variants || !size || !color) return 0;
+  
+  // Find the exact variant match
+  const variant = variants.find(
+    (v) => v.size === size && v.color === color
+  );
+  return variant ? variant.inventory : 0;
+};
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -11,7 +22,8 @@ export default function ProductDetails() {
   const [selectedColor, setSelectedColor] = useState("");
   const [notification, setNotification] = useState(null);
   const [buttonHover, setButtonHover] = useState(false);
-  
+
+  // --- 1. Fetch Product Data and Set Initial State ---
   useEffect(() => {
     document.title = "Details - Vantelle BD";
 
@@ -20,9 +32,20 @@ export default function ProductDetails() {
         const response = await fetch(`${API_BASE_URL}/details/${id}`);
         const data = await response.json();
         if (data.success) {
-          setProduct(data.data);
-          setSelectedSize(data.data.size_options?.[0] || "");
-          setSelectedColor(data.data.color?.split(",")[0] || "");
+          const productData = data.data;
+          setProduct(productData);
+
+          // Set initial selected size and color based on the first variant
+          const firstVariant = productData.variants?.[0];
+          if (firstVariant) {
+            setSelectedSize(firstVariant.size);
+            setSelectedColor(firstVariant.color);
+          } else {
+            // Fallback to non-variant options if no variants exist
+            setSelectedSize(productData.size_options?.[0] || "");
+            setSelectedColor(productData.color?.split(",")[0] || "");
+          }
+
         } else {
           console.error("Failed to load product:", data.message);
         }
@@ -36,29 +59,51 @@ export default function ProductDetails() {
     fetchProduct();
   }, [id]);
 
+  // -------------------------------------------------------------------
+  // --- 2. UNCONDITIONAL HOOKS (Moved before conditional returns) ---
+  // -------------------------------------------------------------------
+
+  // Calculate Current Inventory for the selected variant
+  const currentInventory = useMemo(() => 
+    getVariantInventory(product?.variants, selectedSize, selectedColor),
+    [product, selectedSize, selectedColor]
+  );
+  
+  const isOutOfStock = currentInventory <= 0;
+
+  // Extract unique options from the variants array
+  const uniqueSizes = useMemo(() => 
+    [...new Set(product?.variants?.map(v => v.size))].sort(),
+    [product?.variants]
+  );
+  const uniqueColors = useMemo(() => 
+    [...new Set(product?.variants?.map(v => v.color))].sort(),
+    [product?.variants]
+  );
+  
+  // -------------------------------------------------------------------
+  // --- 3. CONDITIONAL RETURNS (After all Hooks) ---
+  // -------------------------------------------------------------------
+
   if (loading) return <p style={{ textAlign: "center" }}>Loading product details...</p>;
   if (!product) return <p style={{ textAlign: "center" }}>Product not found.</p>;
 
+  // --- 4. Rest of the logic and render ---
+
   const images = product.images || [];
-  const hasMultipleImages = images.length > 1;
-
-  const handlePrev = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
 
   const productImage =
     images.length > 0
       ? `data:image/png;base64,${images[currentImageIndex].image_base64}`
       : "https://via.placeholder.com/400";
 
-  // -------------------------
-  // Add to Cart Handler
-  // -------------------------
+  // Add to Cart
   const handleAddToCart = async () => {
+    if (isOutOfStock) {
+      showNotification("Selected variant is out of stock.", "error");
+      return;
+    }
+    
     const cartItem = {
       product_id: product.id,
       quantity: 1,
@@ -70,7 +115,6 @@ export default function ProductDetails() {
 
     try {
       if (userData?.user_id) {
-        // Logged-in: call backend
         const token = localStorage.getItem("token");
         const res = await fetch(`${API_BASE_URL}/cart/add`, {
           method: "POST",
@@ -82,21 +126,16 @@ export default function ProductDetails() {
         });
 
         const data = await res.json();
-        if (data.success) {
-          showNotification("Item added to cart successfully!", "success");
-        } else {
-          showNotification(data.message || "Failed to add to cart", "error");
-        }
+        if (data.success) showNotification("Item added to cart successfully!", "success");
+        else showNotification(data.message || "Failed to add to cart", "error");
       } else {
-        // Guest: save to localStorage
+        // Guest cart
         const localCart = JSON.parse(localStorage.getItem("cart")) || [];
-
-        // Prepare cart item
-        const cartItem = {
+        const cartItemGuest = {
           product_id: product.id,
           name: product.title,
-          price: parseFloat(product.price), // numeric price
-          qty: 1,                      // default quantity
+          price: parseFloat(product.price),
+          qty: 1,
           size: selectedSize,
           color: selectedColor,
           imageUrl:
@@ -105,23 +144,19 @@ export default function ProductDetails() {
               : "https://via.placeholder.com/60x60?text=No+Image",
           details: `Size: ${selectedSize || "N/A"}, Color: ${selectedColor || "N/A"}`,
           discount: product.discount,
-          discount_type : product.discount_type
+          discount_type: product.discount_type,
         };
 
-        // Check if same variant exists (ignore price)
         const existingIndex = localCart.findIndex(
           (i) =>
-            i.product_id === cartItem.product_id &&
-            i.size === cartItem.size &&
-            i.color === cartItem.color
+            i.product_id === cartItemGuest.product_id &&
+            i.size === cartItemGuest.size &&
+            i.color === cartItemGuest.color
         );
 
-        if (existingIndex >= 0) {
-          localCart[existingIndex].qty += 1; // increment quantity
-        } else {
-          localCart.push(cartItem); // add new item
-        }
-        
+        if (existingIndex >= 0) localCart[existingIndex].qty += 1;
+        else localCart.push(cartItemGuest);
+
         localStorage.setItem("cart", JSON.stringify(localCart));
         showNotification("Item added to cart successfully!", "success");
       }
@@ -131,17 +166,13 @@ export default function ProductDetails() {
     }
   };
 
-  // -------------------------
-  // Notification helper with animation
-  // -------------------------
+  // Notification
   const showNotification = (message, type) => {
-    // Reset notification to re-trigger animation
     setNotification(null);
     setTimeout(() => {
       setNotification({ message, type });
     }, 50);
 
-    // Auto-hide after 3s
     setTimeout(() => setNotification(null), 3050);
   };
 
@@ -178,8 +209,9 @@ export default function ProductDetails() {
         </div>
       )}
 
-      {/* Left: Product Image */}
-      <div style={{ flex: "1 1 300px", textAlign: "center", position: "relative" }}>
+      {/* Left Section: Large Image + Thumbnails */}
+      <div style={{ flex: "1 1 300px", textAlign: "center" }}>
+        {/* LARGE IMAGE */}
         <img
           src={productImage}
           alt={product.title}
@@ -189,111 +221,158 @@ export default function ProductDetails() {
             borderRadius: "8px",
             boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
           }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = "https://via.placeholder.com/400";
-          }}
         />
 
-        {hasMultipleImages && (
-          <>
-            <button onClick={handlePrev} style={carouselBtnStyleLeft}>
-              &#8592;
-            </button>
-            <button onClick={handleNext} style={carouselBtnStyleRight}>
-              &#8594;
-            </button>
-          </>
+        {/* THUMBNAILS BELOW LARGE IMAGE */}
+        {images.length > 0 && (
+          <div
+            style={{
+              marginTop: "1rem",
+              display: "flex",
+              gap: "10px",
+              overflowX: "auto",
+              paddingBottom: "10px",
+            }}
+          >
+            {images.map((img, index) => (
+              <img
+                key={index}
+                src={`data:image/png;base64,${img.image_base64}`}
+                alt="thumb"
+                onClick={() => setCurrentImageIndex(index)}
+                style={{
+                  width: "70px",
+                  height: "70px",
+                  objectFit: "cover",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  border:
+                    currentImageIndex === index ? "3px solid black" : "2px solid #ccc",
+                  transition: "0.2s",
+                }}
+              />
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Right: Product Info */}
+      {/* Right Section: Product Info */}
       <div style={{ flex: "1 1 300px", maxWidth: "500px" }}>
         <h2 style={{ fontSize: "2rem", marginBottom: "1rem" }}>{product.title}</h2>
-        <p style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1rem" }}>
+        
+        {/* Price and Stock Status */}
+        <p style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
           ৳{parseFloat(product.price).toFixed(2)}
         </p>
+        <p style={{ 
+            fontSize: "1rem", 
+            marginBottom: "1rem", 
+            color: isOutOfStock ? "#f44336" : "#4caf50",
+            fontWeight: "bold"
+        }}>
+          Status: {isOutOfStock ? "Out of Stock" : "In Stock"} ({currentInventory} available)
+        </p>
+
         <p style={{ marginBottom: "1rem", lineHeight: "1.6" }}>{product.description}</p>
 
-        {/* Product details (not selectable) */}
         <ul style={{ marginBottom: "1.5rem", lineHeight: "1.6" }}>
-          <li>
-            <strong>Category:</strong> {product.category}
-          </li>
-          <li>
-            <strong>Status:</strong> {product.status}
-          </li>
-          <li>
-            <strong>Inventory:</strong> {product.inventory}
-          </li>
-          <li>
-            <strong>Discount:</strong> ৳{product.discount || 0}
-          </li>
-          <li>
-            <strong>Discount Type:</strong> {product.discount_type || "None"}
-          </li>
-          <li>
-            <strong>Gender:</strong> {product.gender}
-          </li>
-          <li>
-            <strong>Season:</strong> {product.season}
-          </li>
+          <li><strong>Category:</strong> {product.category}</li>
+          <li><strong>Discount:</strong> ৳{product.discount || 0} ({product.discount_type || "None"})</li>
+          <li><strong>Gender:</strong> {product.gender}</li>
+          <li><strong>Season:</strong> {product.season}</li>
         </ul>
 
-        {/* Selectable Size & Color */}
-        <div style={{ marginBottom: "1rem" }}>
-          <label>
-            Size:{" "}
-            <select
-              value={selectedSize}
-              onChange={(e) => setSelectedSize(e.target.value)}
+        {/* --- SELECTABLE SIZE BUTTONS (Inline Layout) --- */}
+        {uniqueSizes.length > 0 && (
+            <div 
+                style={{ 
+                    marginBottom: "1rem", 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '15px'
+                }}
             >
-              {product.size_options?.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+                <strong style={{ margin: 0, whiteSpace: 'nowrap' }}>Size:</strong>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {uniqueSizes.map((s) => (
+                      <div
+                        key={s}
+                        onClick={() => setSelectedSize(s)}
+                        style={{
+                          padding: '8px 15px',
+                          border: s === selectedSize ? '2px solid black' : '1px solid #ccc',
+                          borderRadius: '5px',
+                          cursor: 'pointer',
+                          fontWeight: s === selectedSize ? 'bold' : 'normal',
+                          backgroundColor: s === selectedSize ? '#f0f0f0' : 'white',
+                          transition: '0.2s',
+                        }}
+                      >
+                        {s}
+                      </div>
+                    ))}
+                </div>
+            </div>
+        )}
 
-        <div style={{ marginBottom: "1.5rem" }}>
-          <label>
-            Color:{" "}
-            <select
-              value={selectedColor}
-              onChange={(e) => setSelectedColor(e.target.value)}
+        {/* --- SELECTABLE COLOR SWATCHES (Inline Layout) --- */}
+        {uniqueColors.length > 0 && (
+            <div 
+                style={{ 
+                    marginBottom: "1.5rem", 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '15px'
+                }}
             >
-              {product.color?.split(",").map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+                <strong style={{ margin: 0, whiteSpace: 'nowrap' }}>Color:</strong>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {uniqueColors.map((c) => (
+                      <div
+                        key={c}
+                        onClick={() => setSelectedColor(c)}
+                        title={c}
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '50%',
+                          backgroundColor: c, // Assumes color string is a valid CSS color
+                          cursor: 'pointer',
+                          border: c === selectedColor ? '3px solid #333' : '2px solid #ccc',
+                          outline: c === selectedColor ? '2px solid white' : 'none',
+                          boxShadow: c === selectedColor ? '0 0 0 2px #333' : 'none',
+                          transition: '0.2s',
+                        }}
+                      >
+                        {/* Swatch content */}
+                      </div>
+                    ))}
+                </div>
+            </div>
+        )}
 
         <button
           onClick={handleAddToCart}
           onMouseEnter={() => setButtonHover(true)}
           onMouseLeave={() => setButtonHover(false)}
+          disabled={isOutOfStock} // Disable button if out of stock
           style={{
-            background: buttonHover ? "#333" : "#1a1a1a",
+            background: buttonHover && !isOutOfStock ? "#333" : isOutOfStock ? "#ccc" : "#1a1a1a",
             color: "white",
             padding: "0.8rem 1.5rem",
             border: "none",
-            cursor: "pointer",
+            cursor: isOutOfStock ? "not-allowed" : "pointer",
             borderRadius: "5px",
             fontSize: "1rem",
             transition: "all 0.2s ease",
-            transform: buttonHover ? "scale(1.05)" : "scale(1)",
+            transform: buttonHover && !isOutOfStock ? "scale(1.05)" : "scale(1)",
           }}
         >
-          Add to Cart
+          {isOutOfStock ? "Out of Stock" : "Add to Cart"}
         </button>
       </div>
 
-      {/* Inline keyframes */}
+      {/* Notification animation */}
       <style>
         {`
           @keyframes slideIn {
@@ -305,24 +384,3 @@ export default function ProductDetails() {
     </div>
   );
 }
-
-// Carousel button styles
-const carouselBtnStyleLeft = {
-  position: "absolute",
-  top: "50%",
-  left: "10px",
-  transform: "translateY(-50%)",
-  background: "rgba(0,0,0,0.5)",
-  color: "white",
-  border: "none",
-  borderRadius: "50%",
-  width: "35px",
-  height: "35px",
-  cursor: "pointer",
-};
-
-const carouselBtnStyleRight = {
-  ...carouselBtnStyleLeft,
-  left: "auto",
-  right: "10px",
-};

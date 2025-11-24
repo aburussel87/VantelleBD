@@ -24,7 +24,7 @@ router.get('/', authenticate, async (req, res) => {
 
     // Get cart items
     const cartRes = await db.query(`
-      SELECT c.*, p.title, p.inventory
+      SELECT c.*, p.title
       FROM cart c
       JOIN products p ON p.id = c.product_id
       WHERE c.user_id = $1
