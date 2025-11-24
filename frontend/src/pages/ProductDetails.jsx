@@ -213,6 +213,7 @@ export default function ProductDetails() {
         alignItems: "flex-start",
         padding: "2rem",
         gap: "2rem",
+        minHeight: "77vh",
       }}
     >
       {/* Notification */}

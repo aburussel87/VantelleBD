@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import API_BASE_URL from "./config";
 import html2pdf from "html2pdf.js";
 
@@ -7,7 +7,6 @@ export default function AllOrders() {
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState({});
     const token = localStorage.getItem("token");
-    const invoiceRef = useRef();
 
     useEffect(() => {
         if (!token) {
@@ -144,7 +143,7 @@ export default function AllOrders() {
     };
 
     return (
-        <div style={{ maxWidth: "900px", margin: "40px auto", fontFamily: "'Roboto', sans-serif" }}>
+        <div className="page-container" style={{ maxWidth: "900px", margin: "40px auto", fontFamily: "'Roboto', sans-serif", minHeight: '70vh', padding: '0 15px' }}>
             <h1 style={{ textAlign: "center", marginBottom: "30px", fontSize: "1.8rem" }}>My Orders</h1>
             {categories.map(cat => (
                 <div key={cat} style={{ marginBottom: "15px", border: "1px solid #ddd", borderRadius: "6px", overflow: 'hidden' }}>

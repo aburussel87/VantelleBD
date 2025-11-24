@@ -15,6 +15,7 @@ body {
     width: 100%;
     margin: 0 auto;
     justify-items: center; /* center items when row has few products */
+    min-height: 72vh;
 }
 
 /* --- Product Card Wrapper (fade logic) --- */

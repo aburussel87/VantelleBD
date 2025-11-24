@@ -118,12 +118,12 @@ export default function Navbar() {
 
   const handleMobileLinkClick = useCallback(() => setMenuOpen(false), []);
 
-  const handleMobileLogout = useCallback(() => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/");
-    setMenuOpen(false);
-  }, [navigate]);
+  // const handleMobileLogout = useCallback(() => {
+  //   localStorage.removeItem("token");
+  //   localStorage.removeItem("user");
+  //   navigate("/");
+  //   setMenuOpen(false);
+  // }, [navigate]);
 
   const handleLoginRedirect = () => navigate("/login");
 

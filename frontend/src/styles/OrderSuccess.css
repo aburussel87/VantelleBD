@@ -11,6 +11,7 @@
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Soft shadow */
     padding: 30px; /* Internal padding */
+    min-height: 72vh;
 }
 
 /* Header and success message */

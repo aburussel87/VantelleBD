@@ -9,6 +9,7 @@
     padding: 20px 15px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa; /* Light background for the whole page */
+    min-height: 70vh;
 }
 
 /* ---------------------------------- */
