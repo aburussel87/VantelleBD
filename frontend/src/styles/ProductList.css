@@ -1,0 +1,128 @@
+/* --- Global Styling Refinements --- */
+body {
+    /* Ensure a clean background for the shop page */
+    background-color: #f7f7f7; 
+}
+
+/* --- Container Grid --- */
+.product-list-container {
+    display: grid;
+    /* Use a responsive column count that adapts well */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+    gap: 30px; /* Increased gap for better spacing */
+    padding: 30px 0px; /* Slightly more padding */
+    max-width: 100%; /* Increased max width for larger screens */
+    margin: 0 auto;
+    justify-content: center;
+}
+
+/* --- Product Card Wrapper (Fade-in logic) --- */
+.product-card-wrapper {
+    opacity: 0;
+    transform: translateY(30px); /* Increased starting offset for a deeper fade effect */
+    transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smoother, more custom curve */
+}
+
+.product-card-wrapper.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* --- Product Card --- */
+.product-card {
+    background: #ffffff;
+    border: none; /* Removed the explicit border for a cleaner look */
+    border-radius: 12px;
+    padding: 15px;
+    min-width: 325px;
+    /* Elevated shadow for a premium feel */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); 
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    text-decoration: none;
+    color: #333; /* Darker text for better contrast */
+    transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+
+.product-card:hover {
+    /* Subtle lift and defined shadow on hover */
+    transform: translateY(-8px); 
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15); 
+}
+
+/* --- Images --- */
+.product-card img {
+    /* Increased height for a more impactful image on desktop */
+    height: 300px; 
+    border-radius: 8px; /* Slightly larger border radius */
+    object-fit: cover; /* Retaining 'cover' for desktop to fill space */
+    background-color: #f3f3f3; /* Light, neutral background */
+    /* Added a small transition for a subtle hover effect (optional) */
+    transition: transform 0.3s ease; 
+}
+
+/* --- Product Text --- */
+.product-card h4 {
+    margin-top: 15px; /* More space between image and title */
+    font-size: 1.1rem; /* Larger, more prominent title */
+    font-weight: 700; /* Bolder title */
+    color: #1a1a1a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.product-card p.price {
+    margin-top: 8px;
+    font-size: 1.5rem; /* More prominent price */
+    font-weight: bold;
+    color: #e74c3c; /* A slightly softer, more premium highlight color than pure blue */
+}
+
+/* --- Mobile View Enhancements & Fixes --- */
+@media (max-width: 767px) {
+    .product-list-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 5px 0;
+        max-width: 100%;
+    }
+
+    .product-card {
+        padding: 10px;
+        align-items: left; 
+        min-width:  375px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* Reduced shadow for mobile */
+    }
+
+    .product-card img {
+        height: 150px; 
+        max-width: 100%; 
+        width: auto; 
+        object-fit: contain;
+        background-color: #ffffff; /* Ensure white background for contained images */
+    }
+    
+    .product-card h4 {
+        font-size: 1rem; 
+        margin-top: 8px; 
+        text-align: left; /* Center text on mobile */
+        width: 100%; /* Ensure text uses full width */
+    }
+
+    .product-card p.price {
+        font-size: 1.3rem; 
+        margin-top: 5px;
+    }
+
+    /* --- Mobile-specific fade from left (ENHANCED TRANSITION) --- */
+    .product-card-wrapper {
+        transform: translateX(-20px); 
+        transition: opacity 0.5s ease-out, transform 0.5s ease-out; /* Adjusted transition speed for mobile responsiveness */
+    }
+
+    .product-card-wrapper.visible {
+        transform: translateX(0);
+    }
+}

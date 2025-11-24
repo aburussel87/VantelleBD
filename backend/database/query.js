@@ -20,7 +20,7 @@ async function get_featured_products(){
       FROM products p
       WHERE p.is_featured = true
       ORDER BY p.created_at DESC
-      LIMIT 10;
+      LIMIT 8;
     `;
     const result = await client.query(query);
     return result.rows;

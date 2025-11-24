@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import HeroSection from "../components/HeroSection";
-import ProductList from "../components/HomeProductList";
+import ProductList from "../components/ProductList";
 import  API_BASE_URL  from "./config";
 
 export default function Home() {
